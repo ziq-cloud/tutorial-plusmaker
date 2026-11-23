@@ -8,15 +8,16 @@
 :root{
   --bg:#F3F5F2; --panel:#FFFFFF; --line:#DCE3DE; --fg:#14201A; --muted:#5D6D64;
   --accent:#0F9D58; --accent-fg:#FFFFFF; --monitor:#0B110E;
+  --tg-bg:#9DBB8F; --tg-bubble:#FFFFFF; --tg-fg:#000000; --tg-link:#3A8FD0; --tg-meta:#8C9AA5;
   --font-ui:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0C120F; --panel:#131B17; --line:#24302A; --fg:#E6EEE9; --muted:#8FA39A;
-  --accent:#2BD47D; --accent-fg:#06130C; --monitor:#050806; color-scheme:dark }}
+  --accent:#2BD47D; --accent-fg:#06130C; --monitor:#050806; --tg-bg:#0E1621; --tg-bubble:#182533; --tg-fg:#F5F5F5; --tg-link:#71BAF2; --tg-meta:#6D7F8F; color-scheme:dark }}
 :root[data-theme="dark"]{
   --bg:#0C120F; --panel:#131B17; --line:#24302A; --fg:#E6EEE9; --muted:#8FA39A;
-  --accent:#2BD47D; --accent-fg:#06130C; --monitor:#050806; color-scheme:dark }
+  --accent:#2BD47D; --accent-fg:#06130C; --monitor:#050806; --tg-bg:#0E1621; --tg-bubble:#182533; --tg-fg:#F5F5F5; --tg-link:#71BAF2; --tg-meta:#6D7F8F; color-scheme:dark }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:15px;line-height:1.5}
 .wrap{max-width:1320px;margin:0 auto;padding-block:20px 40px;
@@ -26,7 +27,6 @@ h1{font-size:1.35rem;font-weight:800;margin:0;letter-spacing:-.01em;text-wrap:ba
 header p{margin:0;color:var(--muted);font-size:.92rem}
 .grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
 @media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
-@media (min-width:901px){.monitor{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}}
 .monitor{background:var(--monitor);border-radius:12px;padding:12px;min-width:0}
 .monitor canvas{display:block;width:100%;height:auto;max-width:100%;border-radius:4px;background:#000}
 .meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px;
@@ -59,22 +59,43 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .result{display:flex;flex-direction:column;gap:8px}
 .result video,.result img{width:100%;max-width:100%;border-radius:6px;background:#000}
 .hint{font-size:.8rem;color:var(--muted);margin:0}
+.rack.no-band .needs-band{display:none}
+.count{flex:0 0 auto;font-family:var(--font-mono);font-size:.8rem;color:var(--muted)}
+.count.over{color:#D64545}
+.tg{margin-top:14px;padding:16px;border-radius:8px;background:var(--tg-bg)}
+.tg-label{font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--tg-fg);opacity:.62;margin-bottom:10px}
+.tg-bubble{max-width:440px;background:var(--tg-bubble);color:var(--tg-fg);border-radius:12px;overflow:hidden;
+  font-family:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;font-size:15px;line-height:1.38}
+.tg-name{padding:8px 12px 6px;font-weight:600;color:var(--tg-link)}
+.tg-bubble canvas{display:block;width:100%;height:auto;max-width:100%}
+.tg-cap{padding:8px 12px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.tg-cap:empty{display:none}
+.tg-foot{display:flex;justify-content:flex-end;gap:10px;padding:4px 12px 8px;font-size:12px;color:var(--tg-meta)}
 @media (prefers-reduced-motion:reduce){.bar i{transition:none}}
 </style>
 
 <div class="wrap">
   <header>
     <h1>PlusMaker Performance Card</h1>
-    <p>Letak GIF/video anda di atas, tulis ayat di bawah, kemudian simpan sebagai MP4, GIF atau PNG 16:9.</p>
+    <p>Sediakan GIF/video 16:9 dan caption untuk post channel Telegram anda.</p>
   </header>
 
   <div class="grid">
     <div class="monitor">
       <canvas id="cv" width="1920" height="1080" aria-label="Pratonton kad performance"></canvas>
       <div class="meta"><span id="metaSize">1920 × 1080 · 16:9</span><span id="metaMedia">Contoh animasi (belum ada media)</span></div>
+      <div class="tg" aria-label="Pratonton post Telegram">
+        <div class="tg-label">Pratonton post channel Telegram</div>
+        <div class="tg-bubble">
+          <div class="tg-name" id="tgName">Channel anda</div>
+          <canvas id="tgCv" width="640" height="360"></canvas>
+          <div class="tg-cap" id="tgCap"></div>
+          <div class="tg-foot"><span>👁 1.2K</span><span id="tgTime">10:00</span></div>
+        </div>
+      </div>
     </div>
 
-    <div class="rack">
+    <div class="rack" id="rack">
       <section class="sec">
         <h2>1 · Media</h2>
         <div class="drop" id="drop" tabindex="0" role="button" aria-label="Pilih GIF atau video">
@@ -85,14 +106,32 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
           <label>Muat media
             <select id="fit"><option value="cover">Penuh (crop)</option><option value="contain">Muat semua</option></select>
           </label>
-          <label>Susun atur
-            <select id="layout"><option value="inside">Semua dalam 16:9</option><option value="below">Media 16:9 + teks bawah</option></select>
+          <label>Teks dalam video
+            <select id="layout"><option value="none" selected>Tiada (caption Telegram)</option><option value="inside">Ada, dalam frame 16:9</option><option value="below">Ada, jalur di bawah video</option></select>
           </label>
         </div>
       </section>
 
       <section class="sec">
-        <h2>2 · Ayat anda</h2>
+        <h2>2 · Caption Telegram</h2>
+        <label>Ayat di bawah GIF <small>Tampal terus dalam Telegram semasa hantar GIF/video.</small>
+          <textarea id="tgText" rows="7">📈 Share performance PlusMaker
+
+Tulis keputusan anda di sini.
+
+⚠️ Trading melibatkan risiko. Bukan nasihat kewangan.</textarea>
+        </label>
+        <div class="row" style="align-items:center">
+          <span class="count" id="tgCount">0 / 1024</span>
+          <button class="btn" id="btnCopy" type="button">Salin caption</button>
+        </div>
+        <label>Nama channel (untuk pratonton sahaja)
+          <input type="text" id="tgChan" maxlength="60" value="Channel anda">
+        </label>
+      </section>
+
+      <section class="sec needs-band">
+        <h2>Teks dalam video</h2>
         <label>Label kecil
           <input type="text" id="eyebrow" maxlength="60" value="PLUSMAKER · SHARE PERFORMANCE">
         </label>
@@ -105,8 +144,8 @@ Ikut plan, jaga risiko, konsisten.</textarea>
         </label>
       </section>
 
-      <section class="sec">
-        <h2>3 · Gaya</h2>
+      <section class="sec needs-band">
+        <h2>Gaya teks</h2>
         <div class="seg" role="group" aria-label="Tema output" id="themes">
           <button type="button" data-t="night" aria-pressed="true">Malam</button>
           <button type="button" data-t="day" aria-pressed="false">Siang</button>
@@ -125,7 +164,7 @@ Ikut plan, jaga risiko, konsisten.</textarea>
       </section>
 
       <section class="sec">
-        <h2>4 · Simpan</h2>
+        <h2>3 · Simpan</h2>
         <label>Panjang (saat)
           <input type="number" id="dur" min="1" max="30" step="0.5" value="5">
         </label>
@@ -137,7 +176,7 @@ Ikut plan, jaga risiko, konsisten.</textarea>
         <div class="bar" aria-hidden="true"><i id="prog"></i></div>
         <div class="status" id="status" role="status"></div>
         <div class="result" id="result" hidden></div>
-        <p class="hint">Video: MP4 bila browser menyokong, jika tidak WebM. GIF: 960 px lebar, 12 fps (fail lebih besar, tiada bunyi).</p>
+        <p class="hint">Untuk Telegram, pilih <strong>Simpan video</strong>: MP4 tanpa bunyi dimainkan oleh Telegram sebagai GIF (auto main &amp; ulang), lebih tajam dan lebih kecil daripada fail GIF. Hantar sebagai video biasa, bukan sebagai “File”.</p>
       </section>
     </div>
   </div>
@@ -980,6 +1019,7 @@ return exports;})();
   const ctx = cv.getContext('2d');
   const $ = id => document.getElementById(id);
   const W = 1920, BASE_H = 1080;
+  const tgCv = document.getElementById('tgCv'), tgCtx = tgCv.getContext('2d');
 
   const THEMES = {
     night: { band:'#0E1512', fg:'#EEF5F1', accent:'#2BD47D', muted:'#8FA39A', media:'#000' },
@@ -988,7 +1028,7 @@ return exports;})();
   };
 
   const S = {
-    theme:'night', align:'left', band:28, size:64, fit:'cover', layout:'inside',
+    theme:'night', align:'left', band:28, size:64, fit:'cover', layout:'none',
     eyebrow:$('eyebrow').value, caption:$('caption').value, footer:''
   };
   // media: {kind:'sample'|'video'|'anim'|'image', video, frames:[{bmp,start,dur}], total, img, name}
@@ -1001,12 +1041,15 @@ return exports;})();
   $('footer').value = today; S.footer = today;
   try {
     const d = JSON.parse(localStorage.getItem('pm-card') || 'null');
+    if (d && typeof d.tgText === 'string') $('tgText').value = d.tgText;
+    if (d && typeof d.tgChan === 'string') $('tgChan').value = d.tgChan;
     if (d) for (const k of ['eyebrow','caption','footer']) if (typeof d[k] === 'string') { S[k] = d[k]; $(k).value = d[k]; }
   } catch (e) {}
-  const saveDraft = () => { try { localStorage.setItem('pm-card', JSON.stringify({ eyebrow:S.eyebrow, caption:S.caption, footer:S.footer })); } catch (e) {} };
+  const saveDraft = () => { try { localStorage.setItem('pm-card', JSON.stringify({ eyebrow:S.eyebrow, caption:S.caption, footer:S.footer, tgText:$('tgText').value, tgChan:$('tgChan').value })); } catch (e) {} };
 
   // ---------- geometry ----------
   function dims() {
+    if (S.layout === 'none') return { w:W, h:BASE_H, mh:BASE_H, band:0 };
     if (S.layout === 'inside') {
       const band = Math.round(BASE_H * S.band / 100);
       return { w:W, h:BASE_H, mh:BASE_H - band, band };
@@ -1017,7 +1060,9 @@ return exports;})();
   function syncCanvas() {
     const d = dims();
     if (cv.width !== d.w || cv.height !== d.h) { cv.width = d.w; cv.height = d.h; }
-    const ratio = S.layout === 'inside' ? '16:9' : 'video 16:9 + teks';
+    const ratio = S.layout === 'below' ? 'video 16:9 + teks' : '16:9';
+    $('rack').classList.toggle('no-band', S.layout === 'none');
+    if (tgCv.height !== Math.round(640 * d.h / d.w)) tgCv.height = Math.round(640 * d.h / d.w);
     $('metaSize').textContent = `${d.w} × ${d.h} · ${ratio}`;
   }
 
@@ -1094,6 +1139,7 @@ return exports;})();
     return out;
   }
   function drawBand(c, d) {
+    if (!d.band) return;
     const T = THEMES[S.theme];
     const y0 = d.mh, bh = d.band, pad = 84;
     c.fillStyle = T.band; c.fillRect(0, y0, d.w, bh);
@@ -1149,7 +1195,7 @@ return exports;})();
   // ---------- live loop ----------
   let liveOn = true;
   function loop(now) {
-    if (liveOn) { syncCanvas(); render(ctx, now - clock0); }
+    if (liveOn) { syncCanvas(); render(ctx, now - clock0); tgCtx.drawImage(cv, 0, 0, tgCv.width, tgCv.height); }
     requestAnimationFrame(loop);
   }
 
@@ -1244,7 +1290,7 @@ return exports;})();
   $('btnPng').onclick = () => {
     if (busy) return;
     syncCanvas(); render(ctx, performance.now() - clock0);
-    cv.toBlob(b => b && offer(b, `plusmaker-performance-${stamp()}.png`, 'image'), 'image/png');
+    cv.toBlob(b => b && offer(b, `plusmaker-telegram-${stamp()}.png`, 'image'), 'image/png');
   };
 
   $('btnVideo').onclick = async () => {
@@ -1271,7 +1317,7 @@ return exports;})();
       rec.stop(); await done;
       stream.getTracks().forEach(t => t.stop());
       const blob = new Blob(chunks, { type: mime || 'video/webm' });
-      await offer(blob, `plusmaker-performance-${stamp()}.${ext}`, 'video');
+      await offer(blob, `plusmaker-telegram-${stamp()}.${ext}`, 'video');
     } catch (e) { setStatus('Rakaman gagal: ' + (e.message || e)); }
     finally { lockUI(false); setProg(0); }
   };
@@ -1303,7 +1349,7 @@ return exports;})();
         if (i % 3 === 2) await new Promise(r => setTimeout(r, 0));
       }
       enc.finish();
-      await offer(new Blob([enc.bytes()], { type:'image/gif' }), `plusmaker-performance-${stamp()}.gif`, 'image');
+      await offer(new Blob([enc.bytes()], { type:'image/gif' }), `plusmaker-telegram-${stamp()}.gif`, 'image');
     } catch (e) { setStatus('GIF gagal: ' + (e.message || e)); }
     finally {
       if (wasVideo) media.video.play().catch(() => {});
@@ -1338,6 +1384,26 @@ return exports;})();
     btns.forEach(b => b.onclick = () => { S[key] = b.dataset[attr]; btns.forEach(x => x.setAttribute('aria-pressed', x === b)); });
   }
   seg('themes', 't', 'theme'); seg('aligns', 'a', 'align');
+
+  // ---------- Telegram caption ----------
+  const TG_MAX = 1024;
+  function syncTg() {
+    const txt = $('tgText').value, n = [...txt].length;
+    $('tgCap').textContent = txt;
+    $('tgName').textContent = $('tgChan').value || 'Channel anda';
+    $('tgCount').textContent = `${n} / ${TG_MAX}`;
+    $('tgCount').classList.toggle('over', n > TG_MAX);
+    if (n > TG_MAX) $('tgCount').textContent += ' · terlalu panjang untuk caption';
+  }
+  $('tgText').addEventListener('input', () => { syncTg(); saveDraft(); });
+  $('tgChan').addEventListener('input', () => { syncTg(); saveDraft(); });
+  $('btnCopy').onclick = async () => {
+    const ta = $('tgText');
+    try { await navigator.clipboard.writeText(ta.value); setStatus('Caption disalin. Tampal dalam Telegram.'); }
+    catch (e) { ta.focus(); ta.select(); setStatus('Caption dipilih. Tekan Ctrl+C / Salin.'); }
+  };
+  $('tgTime').textContent = new Date().toLocaleTimeString('ms-MY', { hour:'2-digit', minute:'2-digit', hour12:false });
+  syncTg();
 
   const fontsReady = Promise.all([
     document.fonts.load('800 64px "Plus Jakarta Sans"'), document.fonts.load('700 24px "Plus Jakarta Sans"'),
