@@ -1,0 +1,404 @@
+<title>PlusMaker Daily Pips</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: gold-on-black studio — live 16:9 preview left, entry rack right; stacks on phones. Single dark look to match the PlusMaker brand. */
+:root{
+  --bg:#0A0805; --panel:#14100A; --line:#3A2E17; --fg:#F4EDDD; --muted:#A8977A;
+  --gold:#F5C032; --gold-deep:#B8860B; --ink:#120D04; --ok:#5FD38D; --bad:#FF7A6B;
+  --font-ui:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:15px;line-height:1.5}
+.wrap{max-width:1320px;margin:0 auto;padding-block:20px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin-bottom:16px}
+h1{font-size:1.35rem;font-weight:900;margin:0;letter-spacing:-.01em;color:var(--gold)}
+header p{margin:0;color:var(--muted);font-size:.92rem}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.left{min-width:0;display:flex;flex-direction:column;gap:14px}
+.monitor{background:#000;border:1px solid var(--line);border-radius:12px;padding:10px}
+.monitor canvas{display:block;width:100%;height:auto;max-width:100%;border-radius:4px;background:#000}
+.meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;font-family:var(--font-mono);font-size:.75rem;color:var(--muted)}
+.rack{display:flex;flex-direction:column;gap:14px;min-width:0}
+.sec{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.sec h2{margin:0;font-size:.72rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:600}
+label small{font-weight:500;color:var(--muted)}
+input[type=text],input[type=date],textarea{font:inherit;font-weight:500;color:var(--fg);background:var(--bg);
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+textarea{resize:vertical}
+#entries{font-family:var(--font-mono);font-size:.9rem;min-height:130px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1 1 110px;min-width:0}
+.chk{flex-direction:row;align-items:center;gap:8px;font-weight:600}
+.chk input{accent-color:var(--gold);width:18px;height:18px}
+.parsed{display:flex;flex-direction:column;gap:2px;font-family:var(--font-mono);font-size:.8rem;color:var(--muted)}
+.parsed .bad{color:var(--bad)}
+.btn{font:inherit;font-weight:800;font-size:.9rem;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+.btn.primary{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+.btn:disabled{opacity:.5;cursor:progress}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.status{font-size:.85rem;color:var(--muted);min-height:1.3em}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--gold)}
+.result{display:flex;flex-direction:column;gap:8px}
+.result video,.result img{width:100%;max-width:100%;border-radius:6px;background:#000}
+.hint{font-size:.8rem;color:var(--muted);margin:0}
+.count{flex:0 0 auto;font-family:var(--font-mono);font-size:.8rem;color:var(--muted)}
+.count.over{color:var(--bad)}
+#caption{min-height:190px}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>PlusMaker Daily Pips</h1>
+    <p>Taip keputusan hari ini, dapat video 16:9 gaya notifikasi PlusMaker dan caption untuk channel Telegram.</p>
+  </header>
+
+  <div class="grid">
+    <div class="left">
+      <div class="monitor">
+        <canvas id="cv" width="1920" height="1080" aria-label="Pratonton video daily pips"></canvas>
+        <div class="meta"><span>1920 × 1080 · 16:9 · 30 fps</span><span id="metaDur"></span></div>
+      </div>
+      <section class="sec">
+        <h2>Caption Telegram</h2>
+        <label>Dijana daripada senarai anda. Boleh ubah sebelum salin.
+          <textarea id="caption"></textarea>
+        </label>
+        <div class="row">
+          <span class="count" id="capCount">0 / 1024</span>
+          <button class="btn" id="btnRegen" type="button">Jana semula</button>
+          <button class="btn primary" id="btnCopy" type="button">Salin caption</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="rack">
+      <section class="sec">
+        <h2>1 · Keputusan hari ini</h2>
+        <label for="date">Tarikh
+          <input type="date" id="date">
+        </label>
+        <label for="entries">Satu baris satu trade <small>Format: PAIR pips. Contoh: XAUUSD +120</small>
+          <textarea id="entries" rows="6">XAUUSD +120
+EURUSD +45
+GBPJPY +60</textarea>
+        </label>
+        <div class="parsed" id="parsed" aria-live="polite"></div>
+        <label class="chk"><input type="checkbox" id="showTotal" checked> Tunjuk kad TOTAL di akhir</label>
+      </section>
+
+      <section class="sec">
+        <h2>2 · Teks kad</h2>
+        <label for="hdr">Baris kecil atas setiap kad
+          <input type="text" id="hdr" maxlength="40" value="NEW MESSAGE FROM PLUSMAKER">
+        </label>
+        <label for="suffix">Perkataan selepas nombor
+          <input type="text" id="suffix" maxlength="16" value="PIPS">
+        </label>
+        <label for="totalHdr">Baris kecil kad TOTAL
+          <input type="text" id="totalHdr" maxlength="40" value="DAILY PERFORMANCE">
+        </label>
+      </section>
+
+      <section class="sec">
+        <h2>3 · Simpan</h2>
+        <div class="row">
+          <button class="btn primary" id="btnVideo" type="button">Simpan video MP4</button>
+          <button class="btn" id="btnGif" type="button">Simpan GIF</button>
+          <button class="btn" id="btnPng" type="button">PNG</button>
+        </div>
+        <div class="bar" aria-hidden="true"><i id="prog"></i></div>
+        <div class="status" id="status" role="status"></div>
+        <div class="result" id="result" hidden></div>
+        <p class="hint">Untuk Telegram pilih MP4: video tanpa bunyi dimainkan sebagai GIF (auto main &amp; ulang). Rakaman ikut masa sebenar, jadi biarkan tab ini terbuka sehingga siap.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+/*GIFENC*/
+</script>
+<script>
+(() => {
+  const PLATE = '/*PLATE*/', ICON = '/*ICON*/';
+  const $ = id => document.getElementById(id);
+  const cv = $('cv'), ctx = cv.getContext('2d');
+  const W = 1920, H = 1080;
+  const plate = new Image(); plate.src = PLATE;
+  const icon = new Image(); icon.src = ICON;
+
+  // ---------- state ----------
+  const S = { items: [], showTotal: true, hdr: '', suffix: 'PIPS', totalHdr: '', dateTxt: '' };
+  const fmtDate = d => d.toLocaleDateString('ms-MY', { day:'numeric', month:'short', year:'numeric' }).toUpperCase();
+  const todayISO = (() => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); })();
+  $('date').value = todayISO;
+
+  try {
+    const d = JSON.parse(localStorage.getItem('pm-pips') || 'null');
+    if (d) for (const k of ['entries','hdr','suffix','totalHdr']) if (typeof d[k] === 'string') $(k).value = d[k];
+    if (d && typeof d.showTotal === 'boolean') $('showTotal').checked = d.showTotal;
+  } catch (e) {}
+  const saveDraft = () => { try { localStorage.setItem('pm-pips', JSON.stringify({ entries:$('entries').value, hdr:$('hdr').value, suffix:$('suffix').value, totalHdr:$('totalHdr').value, showTotal:$('showTotal').checked })); } catch (e) {} };
+
+  function parse() {
+    const items = [], bad = [];
+    for (const raw of $('entries').value.split('\n')) {
+      const line = raw.trim(); if (!line) continue;
+      const m = line.match(/^(.*?)[\s|:,=]*([+\-−]?\s*\d+(?:[.,]\d+)?)\s*(pips?)?\s*$/i);
+      if (!m || !m[1].trim()) { bad.push(line); continue; }
+      const n = parseFloat(m[2].replace(/\s/g, '').replace('−', '-').replace(',', '.'));
+      items.push({ pair: m[1].trim().toUpperCase().slice(0, 18), pips: n });
+    }
+    return { items: items.slice(0, 8), bad, cut: items.length > 8 };
+  }
+  const fmtPips = n => (n > 0 ? '+' : n < 0 ? '−' : '') + (Math.round(Math.abs(n) * 10) / 10).toLocaleString('en-US');
+
+  function sync() {
+    const p = parse();
+    S.items = p.items; S.showTotal = $('showTotal').checked;
+    S.hdr = $('hdr').value.trim(); S.suffix = $('suffix').value.trim(); S.totalHdr = $('totalHdr').value.trim();
+    const dv = $('date').value ? new Date($('date').value + 'T12:00:00') : new Date();
+    S.dateTxt = fmtDate(dv);
+    const box = $('parsed'); box.textContent = '';
+    const total = S.items.reduce((a, b) => a + b.pips, 0);
+    const ok = document.createElement('div');
+    ok.textContent = S.items.length ? `${S.items.length} trade · jumlah ${fmtPips(total)} pips` : 'Belum ada trade yang sah.';
+    box.appendChild(ok);
+    for (const b of p.bad) { const e = document.createElement('div'); e.className = 'bad'; e.textContent = `Tak faham: “${b}” (cuba: XAUUSD +120)`; box.appendChild(e); }
+    if (p.cut) { const e = document.createElement('div'); e.className = 'bad'; e.textContent = 'Maksimum 8 trade dalam video; yang selebihnya diabaikan.'; box.appendChild(e); }
+    $('metaDur').textContent = `${(timeline().D / 1000).toFixed(1)} saat`;
+    saveDraft();
+  }
+
+  // ---------- caption ----------
+  let capEdited = false;
+  function makeCaption() {
+    const total = S.items.reduce((a, b) => a + b.pips, 0);
+    const lines = [`📊 Daily Performance PlusMaker`, `🗓 ${S.dateTxt}`, ''];
+    for (const it of S.items) lines.push(`${it.pips >= 0 ? '✅' : '❌'} ${it.pair} ${fmtPips(it.pips)} pips`);
+    if (S.items.length) lines.push('', `💰 Total: ${fmtPips(total)} pips`);
+    lines.push('', '⚠️ Trading melibatkan risiko. Bukan nasihat kewangan.');
+    return lines.join('\n');
+  }
+  function syncCaption(force) {
+    if (force || !capEdited) { $('caption').value = makeCaption(); capEdited = false; }
+    const n = [...$('caption').value].length;
+    $('capCount').textContent = `${n} / 1024` + (n > 1024 ? ' · terlalu panjang' : '');
+    $('capCount').classList.toggle('over', n > 1024);
+  }
+
+  // ---------- timeline ----------
+  const INTRO = 500, STEP = 650, ANIM = 480, HOLD = 2200;
+  function cards() {
+    const list = S.items.map(it => ({ kind:'trade', hdr:S.hdr, pair:it.pair, value:`${fmtPips(it.pips)} ${S.suffix}`.trim(), neg: it.pips < 0 }));
+    if (S.showTotal && S.items.length) {
+      const total = S.items.reduce((a, b) => a + b.pips, 0);
+      list.push({ kind:'total', hdr:[S.totalHdr, S.dateTxt].filter(Boolean).join(' · '), pair:'TOTAL', value:`${fmtPips(total)} ${S.suffix}`.trim(), neg: total < 0 });
+    }
+    return list;
+  }
+  function timeline() { const n = cards().length; return { n, D: INTRO + Math.max(0, n - 1) * STEP + ANIM + HOLD }; }
+
+  // ---------- drawing ----------
+  const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+  const easeOutBack = x => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+  const easeOut = x => 1 - Math.pow(1 - x, 3);
+  function rrect(c, x, y, w, h, r) { c.beginPath(); c.roundRect ? c.roundRect(x, y, w, h, r) : c.rect(x, y, w, h); }
+  function fitText(c, txt, weight, size, family, maxW) {
+    let s = size; c.font = `${weight} ${s}px ${family}`;
+    while (c.measureText(txt).width > maxW && s > 20) { s -= 2; c.font = `${weight} ${s}px ${family}`; }
+    return s;
+  }
+
+  function drawCard(c, card, x, y, w, h, alpha) {
+    c.save(); c.globalAlpha = alpha;
+    const r = h * 0.24, total = card.kind === 'total';
+    c.shadowColor = 'rgba(245,192,50,0.35)'; c.shadowBlur = 40;
+    rrect(c, x, y, w, h, r);
+    if (total) {
+      const g = c.createLinearGradient(x, y, x + w, y + h);
+      g.addColorStop(0, '#FFD866'); g.addColorStop(0.5, '#F5C032'); g.addColorStop(1, '#C8901A');
+      c.fillStyle = g;
+    } else c.fillStyle = 'rgba(8,6,3,0.92)';
+    c.fill(); c.shadowBlur = 0;
+    c.lineWidth = h * 0.028; c.strokeStyle = total ? '#FFE7A1' : '#F5C032'; c.stroke();
+
+    const pad = h * 0.2, ih = h * 0.56, iw = ih * 4 / 3;
+    c.save(); rrect(c, x + pad, y + (h - ih) / 2, iw, ih, ih * 0.16); c.clip();
+    if (icon.complete && icon.naturalWidth) c.drawImage(icon, x + pad, y + (h - ih) / 2, iw, ih);
+    c.restore();
+
+    const tx = x + pad + iw + pad * 0.8, right = x + w - pad;
+    const hs = Math.round(h * 0.165);
+    c.textBaseline = 'alphabetic'; c.textAlign = 'left';
+    c.font = `800 ${hs}px Inter, sans-serif`;
+    c.fillStyle = total ? '#2A1C02' : '#FFFFFF';
+    c.fillText(card.hdr, tx, y + h * 0.39);
+    c.textAlign = 'right'; c.font = `500 ${Math.round(h * 0.13)}px Inter, sans-serif`;
+    c.fillStyle = total ? 'rgba(42,28,2,0.7)' : '#9A9A9A';
+    c.fillText('now', right, y + h * 0.37);
+
+    c.textAlign = 'left';
+    const maxW = right - tx;
+    const title = card.pair + '  ' + card.value;
+    const ts = fitText(c, title, 900, Math.round(h * 0.3), 'Inter, sans-serif', maxW);
+    c.font = `900 ${ts}px Inter, sans-serif`;
+    const ty = y + h * 0.78;
+    if (total) { c.fillStyle = '#140D00'; c.fillText(title, tx, ty); }
+    else {
+      const pairTxt = card.pair + '  ';
+      c.fillStyle = '#FFFFFF'; c.fillText(pairTxt, tx, ty);
+      const gx = tx + c.measureText(pairTxt).width;
+      const g = c.createLinearGradient(0, ty - ts, 0, ty);
+      if (card.neg) { g.addColorStop(0, '#FFB0A6'); g.addColorStop(1, '#FF6A57'); }
+      else { g.addColorStop(0, '#FFE27A'); g.addColorStop(1, '#F2B416'); }
+      c.fillStyle = g; c.fillText(card.value, gx, ty);
+    }
+    c.restore();
+  }
+
+  function render(c, t) {
+    const list = cards(), n = list.length;
+    // background plate with slow push-in
+    c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+    if (plate.complete && plate.naturalWidth) {
+      const z = 1.02 + 0.05 * clamp(t / 6000);
+      const pw = W * z, ph = pw * plate.naturalHeight / plate.naturalWidth;
+      c.drawImage(plate, (W - pw) / 2, (H - ph) / 2, pw, ph);
+    }
+    const prog = list.map((_, i) => clamp((t - INTRO - i * STEP) / ANIM));
+    const eff = prog.reduce((a, p) => a + easeOut(p), 0);
+    c.fillStyle = `rgba(0,0,0,${0.12 + 0.42 * clamp(eff / 2)})`; c.fillRect(0, 0, W, H);
+    if (!n) {
+      c.textAlign = 'center'; c.font = '700 44px Inter, sans-serif'; c.fillStyle = 'rgba(255,255,255,0.75)';
+      c.fillText('Taip trade anda di sebelah kanan', W / 2, H - 90); return;
+    }
+    const baseH = 200, gap = 34, w0 = 1240;
+    const fullH = n * baseH + (n - 1) * gap;
+    const k = Math.min(1, 940 / fullH);
+    const ch = baseH * k, g = gap * k, cw = w0 * Math.max(0.82, k);
+    const stackH = Math.max(ch, eff * (ch + g) - g);
+    const top = (H - stackH) / 2;
+    for (let i = 0; i < n; i++) {
+      const p = prog[i]; if (p <= 0) continue;
+      const y = top + i * (ch + g) + (1 - easeOutBack(p)) * 140 * k;
+      const sc = 0.92 + 0.08 * easeOutBack(p);
+      const x = (W - cw * sc) / 2;
+      drawCard(c, list[i], x, y + ch * (1 - sc) / 2, cw * sc, ch * sc, clamp(p * 1.6));
+    }
+  }
+
+  // ---------- live preview ----------
+  let clock0 = performance.now(), busy = false;
+  function loop(now) { if (!busy) { const { D } = timeline(); render(ctx, (now - clock0) % D); } requestAnimationFrame(loop); }
+
+  // ---------- saving ----------
+  const setStatus = m => $('status').textContent = m;
+  const setProg = p => $('prog').style.width = Math.round(p * 100) + '%';
+  const dlP = (window.claude && window.claude.use) ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
+  function showResult(blob, kind) {
+    const box = $('result'); box.textContent = ''; box.hidden = false;
+    const el = document.createElement(kind === 'video' ? 'video' : 'img');
+    if (kind === 'video') { el.controls = true; el.loop = true; el.muted = true; el.playsInline = true; }
+    el.src = URL.createObjectURL(blob); box.appendChild(el);
+    const p = document.createElement('p'); p.className = 'hint';
+    p.textContent = 'Kalau fail tidak tersimpan, tekan lama / klik kanan pada pratonton ini untuk simpan.';
+    box.appendChild(p);
+  }
+  async function offer(blob, filename, kind) {
+    const mb = (blob.size / 1048576).toFixed(1);
+    const dl = await dlP;
+    if (dl) {
+      try { await dl.save({ filename, data: blob }); setStatus(`Disimpan: ${filename} (${mb} MB)`); return; }
+      catch (e) {
+        if (e && e.code === 'declined') { setStatus('Simpanan dibatalkan.'); return; }
+        if (e && e.code === 'rate_limited') { setStatus('Tunggu sebentar, kemudian tekan simpan sekali lagi.'); showResult(blob, kind); return; }
+      }
+    } else {
+      try { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {}
+    }
+    setStatus(`Siap: ${filename} (${mb} MB)`); showResult(blob, kind);
+  }
+  const fname = ext => `plusmaker-daily-pips-${$('date').value || todayISO}.${ext}`;
+  const lock = on => { busy = on; ['btnVideo','btnGif','btnPng'].forEach(id => $(id).disabled = on); };
+
+  $('btnPng').onclick = () => {
+    if (busy) return;
+    render(ctx, timeline().D - 1);
+    cv.toBlob(b => b && offer(b, fname('png'), 'image'), 'image/png');
+  };
+
+  $('btnVideo').onclick = async () => {
+    if (busy) return;
+    if (!cv.captureStream || !window.MediaRecorder) { setStatus('Browser ini tidak boleh rakam video. Cuba Chrome, Edge atau Safari terkini, atau guna “Simpan GIF”.'); return; }
+    const types = ['video/mp4;codecs=avc1.640028','video/mp4;codecs=avc1.42E01E','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm'];
+    const mime = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    lock(true); setProg(0);
+    try {
+      const { D } = timeline();
+      render(ctx, 0);
+      const stream = cv.captureStream(30);
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 10e6 } : undefined);
+      const chunks = []; rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+      const done = new Promise(r => rec.onstop = r);
+      rec.start(250); setStatus(`Merakam ${(D / 1000).toFixed(1)} saat…`);
+      const t0 = performance.now();
+      await new Promise(r => { const tick = () => { const t = performance.now() - t0; render(ctx, Math.min(t, D - 1)); setProg(t / D); t >= D ? r() : requestAnimationFrame(tick); }; tick(); });
+      rec.stop(); await done; stream.getTracks().forEach(t => t.stop());
+      await offer(new Blob(chunks, { type: mime || 'video/webm' }), fname(ext), 'video');
+    } catch (e) { setStatus('Rakaman gagal: ' + (e.message || e)); }
+    finally { lock(false); setProg(0); clock0 = performance.now(); }
+  };
+
+  $('btnGif').onclick = async () => {
+    if (busy) return;
+    lock(true); setProg(0);
+    try {
+      const { GIFEncoder, quantize, applyPalette } = window.gifenc;
+      const gw = 960, gh = 540, k = gw / W;
+      const oc = document.createElement('canvas'); oc.width = gw; oc.height = gh;
+      const oct = oc.getContext('2d', { willReadFrequently: true });
+      const fps = 15, { D } = timeline(), n = Math.round(D / 1000 * fps);
+      const enc = GIFEncoder();
+      for (let i = 0; i < n; i++) {
+        oct.setTransform(k, 0, 0, k, 0, 0); render(oct, i * 1000 / fps);
+        const data = oct.getImageData(0, 0, gw, gh).data;
+        const palette = quantize(data, 256);
+        enc.writeFrame(applyPalette(data, palette), gw, gh, { palette, delay: Math.round(1000 / fps) });
+        setProg((i + 1) / n); setStatus(`Menyediakan GIF… frame ${i + 1}/${n}`);
+        if (i % 3 === 2) await new Promise(r => setTimeout(r, 0));
+      }
+      enc.finish();
+      await offer(new Blob([enc.bytes()], { type: 'image/gif' }), fname('gif'), 'image');
+    } catch (e) { setStatus('GIF gagal: ' + (e.message || e)); }
+    finally { lock(false); setProg(0); }
+  };
+
+  // ---------- controls ----------
+  for (const id of ['entries','hdr','suffix','totalHdr','date','showTotal']) $(id).addEventListener('input', () => { sync(); syncCaption(); clock0 = performance.now(); });
+  $('caption').addEventListener('input', () => { capEdited = true; syncCaption(); });
+  $('btnRegen').onclick = () => syncCaption(true);
+  $('btnCopy').onclick = async () => {
+    const ta = $('caption');
+    try { await navigator.clipboard.writeText(ta.value); setStatus('Caption disalin. Tampal dalam Telegram.'); }
+    catch (e) { ta.focus(); ta.select(); setStatus('Caption dipilih. Tekan Ctrl+C / Salin.'); }
+  };
+
+  // test hook: render a given time (used to render files offline)
+  window.__pmRender = t => { busy = true; render(ctx, t); return timeline().D; };
+
+  sync(); syncCaption();
+  const fontsReady = Promise.all([document.fonts.load('900 60px Inter'), document.fonts.load('800 30px Inter'), document.fonts.load('500 20px Inter')]).catch(() => {});
+  Promise.race([fontsReady, new Promise(r => setTimeout(r, 1500))]).then(() => { clock0 = performance.now(); requestAnimationFrame(loop); });
+})();
+</script>
