@@ -53,6 +53,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .count{flex:0 0 auto;font-family:var(--font-mono);font-size:.8rem;color:var(--muted)}
 .count.over{color:var(--bad)}
 #caption{min-height:190px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:.78rem;font-weight:800;letter-spacing:.03em;padding:6px 10px;border-radius:999px;border:1px solid var(--gold-deep);background:transparent;color:var(--gold);cursor:pointer}
+.chip:hover{background:rgba(245,192,50,.12)}
 </style>
 
 <div class="wrap">
@@ -86,11 +89,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
         <label for="date">Tarikh
           <input type="date" id="date">
         </label>
-        <label for="entries">Satu baris satu trade <small>Format: PAIR pips. Contoh: XAUUSD +120</small>
-          <textarea id="entries" rows="6">XAUUSD +120
-EURUSD +45
-GBPJPY +60</textarea>
+        <label for="entries">Satu baris satu trade <small>Format: NAMA pips. Contoh: TZB UP +120. Tanpa nombor pun boleh (kad tunjuk nama sahaja).</small>
+          <textarea id="entries" rows="6">TZB UP +120
+TZB DOWN +85
+TPM BUY +60
+TPM SWAP SELL +95</textarea>
         </label>
+        <div class="chips" role="group" aria-label="Tambah baris cepat">
+          <button type="button" class="chip" data-v="TZB UP">+ TZB UP</button>
+          <button type="button" class="chip" data-v="TZB DOWN">+ TZB DOWN</button>
+          <button type="button" class="chip" data-v="TPM BUY">+ TPM BUY</button>
+          <button type="button" class="chip" data-v="TPM SWAP SELL">+ TPM SWAP SELL</button>
+        </div>
         <div class="parsed" id="parsed" aria-live="polite"></div>
         <label class="chk"><input type="checkbox" id="showTotal" checked> Tunjuk kad TOTAL di akhir</label>
       </section>
@@ -972,23 +982,27 @@ return exports;})();
   $('date').value = todayISO;
 
   try {
-    const d = JSON.parse(localStorage.getItem('pm-pips') || 'null');
+    const d = JSON.parse(localStorage.getItem('pm-pips2') || 'null');
     if (d) for (const k of ['entries','hdr','suffix','totalHdr']) if (typeof d[k] === 'string') $(k).value = d[k];
     if (d && typeof d.showTotal === 'boolean') $('showTotal').checked = d.showTotal;
   } catch (e) {}
-  const saveDraft = () => { try { localStorage.setItem('pm-pips', JSON.stringify({ entries:$('entries').value, hdr:$('hdr').value, suffix:$('suffix').value, totalHdr:$('totalHdr').value, showTotal:$('showTotal').checked })); } catch (e) {} };
+  const saveDraft = () => { try { localStorage.setItem('pm-pips2', JSON.stringify({ entries:$('entries').value, hdr:$('hdr').value, suffix:$('suffix').value, totalHdr:$('totalHdr').value, showTotal:$('showTotal').checked })); } catch (e) {} };
 
   function parse() {
     const items = [], bad = [];
     for (const raw of $('entries').value.split('\n')) {
       const line = raw.trim(); if (!line) continue;
       const m = line.match(/^(.*?)[\s|:,=]*([+\-−]?\s*\d+(?:[.,]\d+)?)\s*(pips?)?\s*$/i);
-      if (!m || !m[1].trim()) { bad.push(line); continue; }
-      const n = parseFloat(m[2].replace(/\s/g, '').replace('−', '-').replace(',', '.'));
-      items.push({ pair: m[1].trim().toUpperCase().slice(0, 18), pips: n });
+      if (m && m[1].trim()) {
+        const n = parseFloat(m[2].replace(/\s/g, '').replace('−', '-').replace(',', '.'));
+        items.push({ pair: m[1].trim().toUpperCase().slice(0, 24), pips: n });
+      } else if (/\D/.test(line) && !/\d/.test(line)) items.push({ pair: line.replace(/[\s+\-−|:]+$/, '').toUpperCase().slice(0, 24), pips: null });
+      else bad.push(line);
     }
     return { items: items.slice(0, 8), bad, cut: items.length > 8 };
   }
+  const sumP = items => items.reduce((a, b) => a + (b.pips ?? 0), 0);
+  const hasNum = items => items.some(b => b.pips !== null);
   const fmtPips = n => (n > 0 ? '+' : n < 0 ? '−' : '') + (Math.round(Math.abs(n) * 10) / 10).toLocaleString('en-US');
 
   function sync() {
@@ -998,12 +1012,12 @@ return exports;})();
     const dv = $('date').value ? new Date($('date').value + 'T12:00:00') : new Date();
     S.dateTxt = fmtDate(dv);
     const box = $('parsed'); box.textContent = '';
-    const total = S.items.reduce((a, b) => a + b.pips, 0);
+    const total = sumP(S.items);
     const ok = document.createElement('div');
-    ok.textContent = S.items.length ? `${S.items.length} trade · jumlah ${fmtPips(total)} pips` : 'Belum ada trade yang sah.';
+    ok.textContent = S.items.length ? `${S.items.length} kad · jumlah ${fmtPips(total)} pips` : 'Belum ada baris yang sah.';
     box.appendChild(ok);
-    for (const b of p.bad) { const e = document.createElement('div'); e.className = 'bad'; e.textContent = `Tak faham: “${b}” (cuba: XAUUSD +120)`; box.appendChild(e); }
-    if (p.cut) { const e = document.createElement('div'); e.className = 'bad'; e.textContent = 'Maksimum 8 trade dalam video; yang selebihnya diabaikan.'; box.appendChild(e); }
+    for (const b of p.bad) { const e = document.createElement('div'); e.className = 'bad'; e.textContent = `Tak faham: “${b}” (cuba: TZB UP +120)`; box.appendChild(e); }
+    if (p.cut) { const e = document.createElement('div'); e.className = 'bad'; e.textContent = 'Maksimum 8 kad dalam video; yang selebihnya diabaikan.'; box.appendChild(e); }
     $('metaDur').textContent = `${(timeline().D / 1000).toFixed(1)} saat`;
     saveDraft();
   }
@@ -1011,10 +1025,10 @@ return exports;})();
   // ---------- caption ----------
   let capEdited = false;
   function makeCaption() {
-    const total = S.items.reduce((a, b) => a + b.pips, 0);
+    const total = sumP(S.items);
     const lines = [`📊 Daily Performance PlusMaker`, `🗓 ${S.dateTxt}`, ''];
-    for (const it of S.items) lines.push(`${it.pips >= 0 ? '✅' : '❌'} ${it.pair} ${fmtPips(it.pips)} pips`);
-    if (S.items.length) lines.push('', `💰 Total: ${fmtPips(total)} pips`);
+    for (const it of S.items) lines.push(it.pips === null ? `🔔 ${it.pair}` : `${it.pips >= 0 ? '✅' : '❌'} ${it.pair} ${fmtPips(it.pips)} pips`);
+    if (hasNum(S.items)) lines.push('', `💰 Total: ${fmtPips(total)} pips`);
     lines.push('', '⚠️ Trading melibatkan risiko. Bukan nasihat kewangan.');
     return lines.join('\n');
   }
@@ -1028,9 +1042,9 @@ return exports;})();
   // ---------- timeline ----------
   const INTRO = 500, STEP = 650, ANIM = 480, HOLD = 2200;
   function cards() {
-    const list = S.items.map(it => ({ kind:'trade', hdr:S.hdr, pair:it.pair, value:`${fmtPips(it.pips)} ${S.suffix}`.trim(), neg: it.pips < 0 }));
-    if (S.showTotal && S.items.length) {
-      const total = S.items.reduce((a, b) => a + b.pips, 0);
+    const list = S.items.map(it => ({ kind:'trade', hdr:S.hdr, pair:it.pair, value: it.pips === null ? '' : `${fmtPips(it.pips)} ${S.suffix}`.trim(), neg: it.pips !== null && it.pips < 0 }));
+    if (S.showTotal && hasNum(S.items)) {
+      const total = sumP(S.items);
       list.push({ kind:'total', hdr:[S.totalHdr, S.dateTxt].filter(Boolean).join(' · '), pair:'TOTAL', value:`${fmtPips(total)} ${S.suffix}`.trim(), neg: total < 0 });
     }
     return list;
@@ -1078,14 +1092,14 @@ return exports;})();
 
     c.textAlign = 'left';
     const maxW = right - tx;
-    const title = card.pair + '  ' + card.value;
+    const title = card.value ? card.pair + '  ' + card.value : card.pair;
     const ts = fitText(c, title, 900, Math.round(h * 0.3), 'Inter, sans-serif', maxW);
     c.font = `900 ${ts}px Inter, sans-serif`;
     const ty = y + h * 0.78;
     if (total) { c.fillStyle = '#140D00'; c.fillText(title, tx, ty); }
     else {
-      const pairTxt = card.pair + '  ';
-      c.fillStyle = '#FFFFFF'; c.fillText(pairTxt, tx, ty);
+      const pairTxt = card.value ? card.pair + '  ' : card.pair;
+      c.fillStyle = card.value ? '#FFFFFF' : '#F5C032'; c.fillText(pairTxt, tx, ty);
       const gx = tx + c.measureText(pairTxt).width;
       const g = c.createLinearGradient(0, ty - ts, 0, ty);
       if (card.neg) { g.addColorStop(0, '#FFB0A6'); g.addColorStop(1, '#FF6A57'); }
@@ -1217,6 +1231,12 @@ return exports;})();
   for (const id of ['entries','hdr','suffix','totalHdr','date','showTotal']) $(id).addEventListener('input', () => { sync(); syncCaption(); clock0 = performance.now(); });
   $('caption').addEventListener('input', () => { capEdited = true; syncCaption(); });
   $('btnRegen').onclick = () => syncCaption(true);
+  document.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    const ta = $('entries'), v = ta.value.replace(/\s+$/, '');
+    ta.value = (v ? v + '\n' : '') + b.dataset.v + ' +';
+    ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+    ta.dispatchEvent(new Event('input'));
+  });
   $('btnCopy').onclick = async () => {
     const ta = $('caption');
     try { await navigator.clipboard.writeText(ta.value); setStatus('Caption disalin. Tampal dalam Telegram.'); }
