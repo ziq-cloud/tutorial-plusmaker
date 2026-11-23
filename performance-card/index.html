@@ -1,0 +1,1349 @@
+<title>PlusMaker Performance Card</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: studio tool — live 16:9 preview on the left like a monitor, control rack on the right; stacks on phones. */
+:root{
+  --bg:#F3F5F2; --panel:#FFFFFF; --line:#DCE3DE; --fg:#14201A; --muted:#5D6D64;
+  --accent:#0F9D58; --accent-fg:#FFFFFF; --monitor:#0B110E;
+  --font-ui:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C120F; --panel:#131B17; --line:#24302A; --fg:#E6EEE9; --muted:#8FA39A;
+  --accent:#2BD47D; --accent-fg:#06130C; --monitor:#050806; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0C120F; --panel:#131B17; --line:#24302A; --fg:#E6EEE9; --muted:#8FA39A;
+  --accent:#2BD47D; --accent-fg:#06130C; --monitor:#050806; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:15px;line-height:1.5}
+.wrap{max-width:1320px;margin:0 auto;padding-block:20px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin-bottom:16px}
+h1{font-size:1.35rem;font-weight:800;margin:0;letter-spacing:-.01em;text-wrap:balance}
+header p{margin:0;color:var(--muted);font-size:.92rem}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media (min-width:901px){.monitor{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}}
+.monitor{background:var(--monitor);border-radius:12px;padding:12px;min-width:0}
+.monitor canvas{display:block;width:100%;height:auto;max-width:100%;border-radius:4px;background:#000}
+.meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px;
+  font-family:var(--font-mono);font-size:.75rem;color:#8FA39A;letter-spacing:.02em}
+.rack{display:flex;flex-direction:column;gap:14px;min-width:0}
+.sec{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.sec h2{margin:0;font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;font-weight:600}
+label small{font-weight:500;color:var(--muted)}
+input[type=text],textarea,select,input[type=number]{font:inherit;font-weight:500;color:var(--fg);background:var(--bg);
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+textarea{resize:vertical;min-height:84px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1 1 120px;min-width:0}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:14px;text-align:center;cursor:pointer;color:var(--muted);font-size:.88rem}
+.drop strong{color:var(--fg)}
+.drop.over{border-color:var(--accent);color:var(--fg)}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{flex:1;font:inherit;font-size:.82rem;font-weight:600;padding:7px 6px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg)}
+.btn{font:inherit;font-weight:700;font-size:.9rem;padding:10px 12px;border-radius:8px;border:1px solid var(--line);
+  background:var(--panel);color:var(--fg);cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:progress}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.drop:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{font-size:.85rem;color:var(--muted);min-height:1.3em}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+.result{display:flex;flex-direction:column;gap:8px}
+.result video,.result img{width:100%;max-width:100%;border-radius:6px;background:#000}
+.hint{font-size:.8rem;color:var(--muted);margin:0}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>PlusMaker Performance Card</h1>
+    <p>Letak GIF/video anda di atas, tulis ayat di bawah, kemudian simpan sebagai MP4, GIF atau PNG 16:9.</p>
+  </header>
+
+  <div class="grid">
+    <div class="monitor">
+      <canvas id="cv" width="1920" height="1080" aria-label="Pratonton kad performance"></canvas>
+      <div class="meta"><span id="metaSize">1920 × 1080 · 16:9</span><span id="metaMedia">Contoh animasi (belum ada media)</span></div>
+    </div>
+
+    <div class="rack">
+      <section class="sec">
+        <h2>1 · Media</h2>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Pilih GIF atau video">
+          <strong>Pilih GIF / video / gambar</strong><br>atau seret fail ke sini
+        </div>
+        <input type="file" id="file" accept="image/gif,image/webp,image/png,image/jpeg,video/*" hidden>
+        <div class="row">
+          <label>Muat media
+            <select id="fit"><option value="cover">Penuh (crop)</option><option value="contain">Muat semua</option></select>
+          </label>
+          <label>Susun atur
+            <select id="layout"><option value="inside">Semua dalam 16:9</option><option value="below">Media 16:9 + teks bawah</option></select>
+          </label>
+        </div>
+      </section>
+
+      <section class="sec">
+        <h2>2 · Ayat anda</h2>
+        <label>Label kecil
+          <input type="text" id="eyebrow" maxlength="60" value="PLUSMAKER · SHARE PERFORMANCE">
+        </label>
+        <label>Ayat utama <small>Enter untuk baris baru. Saiz mengecil sendiri kalau panjang.</small>
+          <textarea id="caption">Performance minggu ni bersama PlusMaker 🔥
+Ikut plan, jaga risiko, konsisten.</textarea>
+        </label>
+        <label>Baris bawah <small>contoh: @username · tarikh</small>
+          <input type="text" id="footer" maxlength="80" value="">
+        </label>
+      </section>
+
+      <section class="sec">
+        <h2>3 · Gaya</h2>
+        <div class="seg" role="group" aria-label="Tema output" id="themes">
+          <button type="button" data-t="night" aria-pressed="true">Malam</button>
+          <button type="button" data-t="day" aria-pressed="false">Siang</button>
+          <button type="button" data-t="gold" aria-pressed="false">Emas</button>
+        </div>
+        <div class="seg" role="group" aria-label="Jajaran teks" id="aligns">
+          <button type="button" data-a="left" aria-pressed="true">Kiri</button>
+          <button type="button" data-a="center" aria-pressed="false">Tengah</button>
+        </div>
+        <label>Tinggi ruang teks <small id="bandVal">28%</small>
+          <input type="range" id="band" min="16" max="45" value="28">
+        </label>
+        <label>Saiz tulisan <small id="sizeVal">64 px</small>
+          <input type="range" id="size" min="32" max="110" value="64">
+        </label>
+      </section>
+
+      <section class="sec">
+        <h2>4 · Simpan</h2>
+        <label>Panjang (saat)
+          <input type="number" id="dur" min="1" max="30" step="0.5" value="5">
+        </label>
+        <div class="row">
+          <button class="btn primary" id="btnVideo" type="button">Simpan video</button>
+          <button class="btn" id="btnGif" type="button">Simpan GIF</button>
+          <button class="btn" id="btnPng" type="button">Simpan PNG</button>
+        </div>
+        <div class="bar" aria-hidden="true"><i id="prog"></i></div>
+        <div class="status" id="status" role="status"></div>
+        <div class="result" id="result" hidden></div>
+        <p class="hint">Video: MP4 bila browser menyokong, jika tidak WebM. GIF: 960 px lebar, 12 fps (fail lebih besar, tiada bunyi).</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+/* gifenc 1.0.3, MIT License, (c) 2017 Matt DesLauriers */
+window.gifenc=(function(){var exports={};
+var __defProp = Object.defineProperty;
+var __markAsModule = (target) => __defProp(target, "__esModule", {value: true});
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, {get: all[name], enumerable: true});
+};
+
+// src/index.js
+__markAsModule(exports);
+__export(exports, {
+  GIFEncoder: () => GIFEncoder,
+  applyPalette: () => applyPalette,
+  default: () => src_default,
+  nearestColor: () => nearestColor,
+  nearestColorIndex: () => nearestColorIndex,
+  nearestColorIndexWithDistance: () => nearestColorIndexWithDistance,
+  prequantize: () => prequantize,
+  quantize: () => quantize,
+  snapColorsToPalette: () => snapColorsToPalette
+});
+
+// src/constants.js
+var constants_default = {
+  signature: "GIF",
+  version: "89a",
+  trailer: 59,
+  extensionIntroducer: 33,
+  applicationExtensionLabel: 255,
+  graphicControlExtensionLabel: 249,
+  imageSeparator: 44,
+  signatureSize: 3,
+  versionSize: 3,
+  globalColorTableFlagMask: 128,
+  colorResolutionMask: 112,
+  sortFlagMask: 8,
+  globalColorTableSizeMask: 7,
+  applicationIdentifierSize: 8,
+  applicationAuthCodeSize: 3,
+  disposalMethodMask: 28,
+  userInputFlagMask: 2,
+  transparentColorFlagMask: 1,
+  localColorTableFlagMask: 128,
+  interlaceFlagMask: 64,
+  idSortFlagMask: 32,
+  localColorTableSizeMask: 7
+};
+
+// src/stream.js
+function createStream(initialCapacity = 256) {
+  let cursor = 0;
+  let contents = new Uint8Array(initialCapacity);
+  return {
+    get buffer() {
+      return contents.buffer;
+    },
+    reset() {
+      cursor = 0;
+    },
+    bytesView() {
+      return contents.subarray(0, cursor);
+    },
+    bytes() {
+      return contents.slice(0, cursor);
+    },
+    writeByte(byte) {
+      expand(cursor + 1);
+      contents[cursor] = byte;
+      cursor++;
+    },
+    writeBytes(data, offset = 0, byteLength = data.length) {
+      expand(cursor + byteLength);
+      for (let i = 0; i < byteLength; i++) {
+        contents[cursor++] = data[i + offset];
+      }
+    },
+    writeBytesView(data, offset = 0, byteLength = data.byteLength) {
+      expand(cursor + byteLength);
+      contents.set(data.subarray(offset, offset + byteLength), cursor);
+      cursor += byteLength;
+    }
+  };
+  function expand(newCapacity) {
+    var prevCapacity = contents.length;
+    if (prevCapacity >= newCapacity)
+      return;
+    var CAPACITY_DOUBLING_MAX = 1024 * 1024;
+    newCapacity = Math.max(newCapacity, prevCapacity * (prevCapacity < CAPACITY_DOUBLING_MAX ? 2 : 1.125) >>> 0);
+    if (prevCapacity != 0)
+      newCapacity = Math.max(newCapacity, 256);
+    const oldContents = contents;
+    contents = new Uint8Array(newCapacity);
+    if (cursor > 0)
+      contents.set(oldContents.subarray(0, cursor), 0);
+  }
+}
+
+// src/lzwEncode.js
+var BITS = 12;
+var DEFAULT_HSIZE = 5003;
+var MASKS = [
+  0,
+  1,
+  3,
+  7,
+  15,
+  31,
+  63,
+  127,
+  255,
+  511,
+  1023,
+  2047,
+  4095,
+  8191,
+  16383,
+  32767,
+  65535
+];
+function lzwEncode(width, height, pixels, colorDepth, outStream = createStream(512), accum = new Uint8Array(256), htab = new Int32Array(DEFAULT_HSIZE), codetab = new Int32Array(DEFAULT_HSIZE)) {
+  const hsize = htab.length;
+  const initCodeSize = Math.max(2, colorDepth);
+  accum.fill(0);
+  codetab.fill(0);
+  htab.fill(-1);
+  let cur_accum = 0;
+  let cur_bits = 0;
+  const init_bits = initCodeSize + 1;
+  const g_init_bits = init_bits;
+  let clear_flg = false;
+  let n_bits = g_init_bits;
+  let maxcode = (1 << n_bits) - 1;
+  const ClearCode = 1 << init_bits - 1;
+  const EOFCode = ClearCode + 1;
+  let free_ent = ClearCode + 2;
+  let a_count = 0;
+  let ent = pixels[0];
+  let hshift = 0;
+  for (let fcode = hsize; fcode < 65536; fcode *= 2) {
+    ++hshift;
+  }
+  hshift = 8 - hshift;
+  outStream.writeByte(initCodeSize);
+  output(ClearCode);
+  const length = pixels.length;
+  for (let idx = 1; idx < length; idx++) {
+    next_block: {
+      const c = pixels[idx];
+      const fcode = (c << BITS) + ent;
+      let i = c << hshift ^ ent;
+      if (htab[i] === fcode) {
+        ent = codetab[i];
+        break next_block;
+      }
+      const disp = i === 0 ? 1 : hsize - i;
+      while (htab[i] >= 0) {
+        i -= disp;
+        if (i < 0)
+          i += hsize;
+        if (htab[i] === fcode) {
+          ent = codetab[i];
+          break next_block;
+        }
+      }
+      output(ent);
+      ent = c;
+      if (free_ent < 1 << BITS) {
+        codetab[i] = free_ent++;
+        htab[i] = fcode;
+      } else {
+        htab.fill(-1);
+        free_ent = ClearCode + 2;
+        clear_flg = true;
+        output(ClearCode);
+      }
+    }
+  }
+  output(ent);
+  output(EOFCode);
+  outStream.writeByte(0);
+  return outStream.bytesView();
+  function output(code) {
+    cur_accum &= MASKS[cur_bits];
+    if (cur_bits > 0)
+      cur_accum |= code << cur_bits;
+    else
+      cur_accum = code;
+    cur_bits += n_bits;
+    while (cur_bits >= 8) {
+      accum[a_count++] = cur_accum & 255;
+      if (a_count >= 254) {
+        outStream.writeByte(a_count);
+        outStream.writeBytesView(accum, 0, a_count);
+        a_count = 0;
+      }
+      cur_accum >>= 8;
+      cur_bits -= 8;
+    }
+    if (free_ent > maxcode || clear_flg) {
+      if (clear_flg) {
+        n_bits = g_init_bits;
+        maxcode = (1 << n_bits) - 1;
+        clear_flg = false;
+      } else {
+        ++n_bits;
+        maxcode = n_bits === BITS ? 1 << n_bits : (1 << n_bits) - 1;
+      }
+    }
+    if (code == EOFCode) {
+      while (cur_bits > 0) {
+        accum[a_count++] = cur_accum & 255;
+        if (a_count >= 254) {
+          outStream.writeByte(a_count);
+          outStream.writeBytesView(accum, 0, a_count);
+          a_count = 0;
+        }
+        cur_accum >>= 8;
+        cur_bits -= 8;
+      }
+      if (a_count > 0) {
+        outStream.writeByte(a_count);
+        outStream.writeBytesView(accum, 0, a_count);
+        a_count = 0;
+      }
+    }
+  }
+}
+var lzwEncode_default = lzwEncode;
+
+// src/rgb-packing.js
+function rgb888_to_rgb565(r, g, b) {
+  return r << 8 & 63488 | g << 2 & 992 | b >> 3;
+}
+function rgba8888_to_rgba4444(r, g, b, a) {
+  return r >> 4 | g & 240 | (b & 240) << 4 | (a & 240) << 8;
+}
+function rgb888_to_rgb444(r, g, b) {
+  return r >> 4 << 8 | g & 240 | b >> 4;
+}
+
+// src/pnnquant2.js
+function clamp(value, min, max) {
+  return value < min ? min : value > max ? max : value;
+}
+function sqr(value) {
+  return value * value;
+}
+function find_nn(bins, idx, hasAlpha) {
+  var nn = 0;
+  var err = 1e100;
+  const bin1 = bins[idx];
+  const n1 = bin1.cnt;
+  const wa = bin1.ac;
+  const wr = bin1.rc;
+  const wg = bin1.gc;
+  const wb = bin1.bc;
+  for (var i = bin1.fw; i != 0; i = bins[i].fw) {
+    const bin = bins[i];
+    const n2 = bin.cnt;
+    const nerr2 = n1 * n2 / (n1 + n2);
+    if (nerr2 >= err)
+      continue;
+    var nerr = 0;
+    if (hasAlpha) {
+      nerr += nerr2 * sqr(bin.ac - wa);
+      if (nerr >= err)
+        continue;
+    }
+    nerr += nerr2 * sqr(bin.rc - wr);
+    if (nerr >= err)
+      continue;
+    nerr += nerr2 * sqr(bin.gc - wg);
+    if (nerr >= err)
+      continue;
+    nerr += nerr2 * sqr(bin.bc - wb);
+    if (nerr >= err)
+      continue;
+    err = nerr;
+    nn = i;
+  }
+  bin1.err = err;
+  bin1.nn = nn;
+}
+function create_bin() {
+  return {
+    ac: 0,
+    rc: 0,
+    gc: 0,
+    bc: 0,
+    cnt: 0,
+    nn: 0,
+    fw: 0,
+    bk: 0,
+    tm: 0,
+    mtm: 0,
+    err: 0
+  };
+}
+function create_bin_list(data, format) {
+  const bincount = format === "rgb444" ? 4096 : 65536;
+  const bins = new Array(bincount);
+  const size = data.length;
+  if (format === "rgba4444") {
+    for (let i = 0; i < size; ++i) {
+      const color = data[i];
+      const a = color >> 24 & 255;
+      const b = color >> 16 & 255;
+      const g = color >> 8 & 255;
+      const r = color & 255;
+      const index = rgba8888_to_rgba4444(r, g, b, a);
+      let bin = index in bins ? bins[index] : bins[index] = create_bin();
+      bin.rc += r;
+      bin.gc += g;
+      bin.bc += b;
+      bin.ac += a;
+      bin.cnt++;
+    }
+  } else if (format === "rgb444") {
+    for (let i = 0; i < size; ++i) {
+      const color = data[i];
+      const b = color >> 16 & 255;
+      const g = color >> 8 & 255;
+      const r = color & 255;
+      const index = rgb888_to_rgb444(r, g, b);
+      let bin = index in bins ? bins[index] : bins[index] = create_bin();
+      bin.rc += r;
+      bin.gc += g;
+      bin.bc += b;
+      bin.cnt++;
+    }
+  } else {
+    for (let i = 0; i < size; ++i) {
+      const color = data[i];
+      const b = color >> 16 & 255;
+      const g = color >> 8 & 255;
+      const r = color & 255;
+      const index = rgb888_to_rgb565(r, g, b);
+      let bin = index in bins ? bins[index] : bins[index] = create_bin();
+      bin.rc += r;
+      bin.gc += g;
+      bin.bc += b;
+      bin.cnt++;
+    }
+  }
+  return bins;
+}
+function quantize(rgba, maxColors, opts = {}) {
+  const {
+    format = "rgb565",
+    clearAlpha = true,
+    clearAlphaColor = 0,
+    clearAlphaThreshold = 0,
+    oneBitAlpha = false
+  } = opts;
+  if (!rgba || !rgba.buffer) {
+    throw new Error("quantize() expected RGBA Uint8Array data");
+  }
+  if (!(rgba instanceof Uint8Array) && !(rgba instanceof Uint8ClampedArray)) {
+    throw new Error("quantize() expected RGBA Uint8Array data");
+  }
+  const data = new Uint32Array(rgba.buffer);
+  let useSqrt = opts.useSqrt !== false;
+  const hasAlpha = format === "rgba4444";
+  const bins = create_bin_list(data, format);
+  const bincount = bins.length;
+  const bincountMinusOne = bincount - 1;
+  const heap = new Uint32Array(bincount + 1);
+  var maxbins = 0;
+  for (var i = 0; i < bincount; ++i) {
+    const bin = bins[i];
+    if (bin != null) {
+      var d = 1 / bin.cnt;
+      if (hasAlpha)
+        bin.ac *= d;
+      bin.rc *= d;
+      bin.gc *= d;
+      bin.bc *= d;
+      bins[maxbins++] = bin;
+    }
+  }
+  if (sqr(maxColors) / maxbins < 0.022) {
+    useSqrt = false;
+  }
+  var i = 0;
+  for (; i < maxbins - 1; ++i) {
+    bins[i].fw = i + 1;
+    bins[i + 1].bk = i;
+    if (useSqrt)
+      bins[i].cnt = Math.sqrt(bins[i].cnt);
+  }
+  if (useSqrt)
+    bins[i].cnt = Math.sqrt(bins[i].cnt);
+  var h, l, l2;
+  for (i = 0; i < maxbins; ++i) {
+    find_nn(bins, i, false);
+    var err = bins[i].err;
+    for (l = ++heap[0]; l > 1; l = l2) {
+      l2 = l >> 1;
+      if (bins[h = heap[l2]].err <= err)
+        break;
+      heap[l] = h;
+    }
+    heap[l] = i;
+  }
+  var extbins = maxbins - maxColors;
+  for (i = 0; i < extbins; ) {
+    var tb;
+    for (; ; ) {
+      var b1 = heap[1];
+      tb = bins[b1];
+      if (tb.tm >= tb.mtm && bins[tb.nn].mtm <= tb.tm)
+        break;
+      if (tb.mtm == bincountMinusOne)
+        b1 = heap[1] = heap[heap[0]--];
+      else {
+        find_nn(bins, b1, false);
+        tb.tm = i;
+      }
+      var err = bins[b1].err;
+      for (l = 1; (l2 = l + l) <= heap[0]; l = l2) {
+        if (l2 < heap[0] && bins[heap[l2]].err > bins[heap[l2 + 1]].err)
+          l2++;
+        if (err <= bins[h = heap[l2]].err)
+          break;
+        heap[l] = h;
+      }
+      heap[l] = b1;
+    }
+    var nb = bins[tb.nn];
+    var n1 = tb.cnt;
+    var n2 = nb.cnt;
+    var d = 1 / (n1 + n2);
+    if (hasAlpha)
+      tb.ac = d * (n1 * tb.ac + n2 * nb.ac);
+    tb.rc = d * (n1 * tb.rc + n2 * nb.rc);
+    tb.gc = d * (n1 * tb.gc + n2 * nb.gc);
+    tb.bc = d * (n1 * tb.bc + n2 * nb.bc);
+    tb.cnt += nb.cnt;
+    tb.mtm = ++i;
+    bins[nb.bk].fw = nb.fw;
+    bins[nb.fw].bk = nb.bk;
+    nb.mtm = bincountMinusOne;
+  }
+  let palette = [];
+  var k = 0;
+  for (i = 0; ; ++k) {
+    let r = clamp(Math.round(bins[i].rc), 0, 255);
+    let g = clamp(Math.round(bins[i].gc), 0, 255);
+    let b = clamp(Math.round(bins[i].bc), 0, 255);
+    let a = 255;
+    if (hasAlpha) {
+      a = clamp(Math.round(bins[i].ac), 0, 255);
+      if (oneBitAlpha) {
+        const threshold = typeof oneBitAlpha === "number" ? oneBitAlpha : 127;
+        a = a <= threshold ? 0 : 255;
+      }
+      if (clearAlpha && a <= clearAlphaThreshold) {
+        r = g = b = clearAlphaColor;
+        a = 0;
+      }
+    }
+    const color = hasAlpha ? [r, g, b, a] : [r, g, b];
+    const exists = existsInPalette(palette, color);
+    if (!exists)
+      palette.push(color);
+    if ((i = bins[i].fw) == 0)
+      break;
+  }
+  return palette;
+}
+function existsInPalette(palette, color) {
+  for (let i = 0; i < palette.length; i++) {
+    const p = palette[i];
+    let matchesRGB = p[0] === color[0] && p[1] === color[1] && p[2] === color[2];
+    let matchesAlpha = p.length >= 4 && color.length >= 4 ? p[3] === color[3] : true;
+    if (matchesRGB && matchesAlpha)
+      return true;
+  }
+  return false;
+}
+
+// src/color.js
+function euclideanDistanceSquared(a, b) {
+  var sum = 0;
+  var n;
+  for (n = 0; n < a.length; n++) {
+    const dx = a[n] - b[n];
+    sum += dx * dx;
+  }
+  return sum;
+}
+
+// src/palettize.js
+function roundStep(byte, step) {
+  return step > 1 ? Math.round(byte / step) * step : byte;
+}
+function prequantize(rgba, {roundRGB = 5, roundAlpha = 10, oneBitAlpha = null} = {}) {
+  const data = new Uint32Array(rgba.buffer);
+  for (let i = 0; i < data.length; i++) {
+    const color = data[i];
+    let a = color >> 24 & 255;
+    let b = color >> 16 & 255;
+    let g = color >> 8 & 255;
+    let r = color & 255;
+    a = roundStep(a, roundAlpha);
+    if (oneBitAlpha) {
+      const threshold = typeof oneBitAlpha === "number" ? oneBitAlpha : 127;
+      a = a <= threshold ? 0 : 255;
+    }
+    r = roundStep(r, roundRGB);
+    g = roundStep(g, roundRGB);
+    b = roundStep(b, roundRGB);
+    data[i] = a << 24 | b << 16 | g << 8 | r << 0;
+  }
+}
+function applyPalette(rgba, palette, format = "rgb565") {
+  if (!rgba || !rgba.buffer) {
+    throw new Error("quantize() expected RGBA Uint8Array data");
+  }
+  if (!(rgba instanceof Uint8Array) && !(rgba instanceof Uint8ClampedArray)) {
+    throw new Error("quantize() expected RGBA Uint8Array data");
+  }
+  if (palette.length > 256) {
+    throw new Error("applyPalette() only works with 256 colors or less");
+  }
+  const data = new Uint32Array(rgba.buffer);
+  const length = data.length;
+  const bincount = format === "rgb444" ? 4096 : 65536;
+  const index = new Uint8Array(length);
+  const cache = new Array(bincount);
+  const hasAlpha = format === "rgba4444";
+  if (format === "rgba4444") {
+    for (let i = 0; i < length; i++) {
+      const color = data[i];
+      const a = color >> 24 & 255;
+      const b = color >> 16 & 255;
+      const g = color >> 8 & 255;
+      const r = color & 255;
+      const key = rgba8888_to_rgba4444(r, g, b, a);
+      const idx = key in cache ? cache[key] : cache[key] = nearestColorIndexRGBA(r, g, b, a, palette);
+      index[i] = idx;
+    }
+  } else {
+    const rgb888_to_key = format === "rgb444" ? rgb888_to_rgb444 : rgb888_to_rgb565;
+    for (let i = 0; i < length; i++) {
+      const color = data[i];
+      const b = color >> 16 & 255;
+      const g = color >> 8 & 255;
+      const r = color & 255;
+      const key = rgb888_to_key(r, g, b);
+      const idx = key in cache ? cache[key] : cache[key] = nearestColorIndexRGB(r, g, b, palette);
+      index[i] = idx;
+    }
+  }
+  return index;
+}
+function nearestColorIndexRGBA(r, g, b, a, palette) {
+  let k = 0;
+  let mindist = 1e100;
+  for (let i = 0; i < palette.length; i++) {
+    const px2 = palette[i];
+    const a2 = px2[3];
+    let curdist = sqr2(a2 - a);
+    if (curdist > mindist)
+      continue;
+    const r2 = px2[0];
+    curdist += sqr2(r2 - r);
+    if (curdist > mindist)
+      continue;
+    const g2 = px2[1];
+    curdist += sqr2(g2 - g);
+    if (curdist > mindist)
+      continue;
+    const b2 = px2[2];
+    curdist += sqr2(b2 - b);
+    if (curdist > mindist)
+      continue;
+    mindist = curdist;
+    k = i;
+  }
+  return k;
+}
+function nearestColorIndexRGB(r, g, b, palette) {
+  let k = 0;
+  let mindist = 1e100;
+  for (let i = 0; i < palette.length; i++) {
+    const px2 = palette[i];
+    const r2 = px2[0];
+    let curdist = sqr2(r2 - r);
+    if (curdist > mindist)
+      continue;
+    const g2 = px2[1];
+    curdist += sqr2(g2 - g);
+    if (curdist > mindist)
+      continue;
+    const b2 = px2[2];
+    curdist += sqr2(b2 - b);
+    if (curdist > mindist)
+      continue;
+    mindist = curdist;
+    k = i;
+  }
+  return k;
+}
+function snapColorsToPalette(palette, knownColors, threshold = 5) {
+  if (!palette.length || !knownColors.length)
+    return;
+  const paletteRGB = palette.map((p) => p.slice(0, 3));
+  const thresholdSq = threshold * threshold;
+  const dim = palette[0].length;
+  for (let i = 0; i < knownColors.length; i++) {
+    let color = knownColors[i];
+    if (color.length < dim) {
+      color = [color[0], color[1], color[2], 255];
+    } else if (color.length > dim) {
+      color = color.slice(0, 3);
+    } else {
+      color = color.slice();
+    }
+    const r = nearestColorIndexWithDistance(paletteRGB, color.slice(0, 3), euclideanDistanceSquared);
+    const idx = r[0];
+    const distanceSq = r[1];
+    if (distanceSq > 0 && distanceSq <= thresholdSq) {
+      palette[idx] = color;
+    }
+  }
+}
+function sqr2(a) {
+  return a * a;
+}
+function nearestColorIndex(colors, pixel, distanceFn = euclideanDistanceSquared) {
+  let minDist = Infinity;
+  let minDistIndex = -1;
+  for (let j = 0; j < colors.length; j++) {
+    const paletteColor = colors[j];
+    const dist = distanceFn(pixel, paletteColor);
+    if (dist < minDist) {
+      minDist = dist;
+      minDistIndex = j;
+    }
+  }
+  return minDistIndex;
+}
+function nearestColorIndexWithDistance(colors, pixel, distanceFn = euclideanDistanceSquared) {
+  let minDist = Infinity;
+  let minDistIndex = -1;
+  for (let j = 0; j < colors.length; j++) {
+    const paletteColor = colors[j];
+    const dist = distanceFn(pixel, paletteColor);
+    if (dist < minDist) {
+      minDist = dist;
+      minDistIndex = j;
+    }
+  }
+  return [minDistIndex, minDist];
+}
+function nearestColor(colors, pixel, distanceFn = euclideanDistanceSquared) {
+  return colors[nearestColorIndex(colors, pixel, distanceFn)];
+}
+
+// src/index.js
+function GIFEncoder(opt = {}) {
+  const {initialCapacity = 4096, auto = true} = opt;
+  const stream = createStream(initialCapacity);
+  const HSIZE = 5003;
+  const accum = new Uint8Array(256);
+  const htab = new Int32Array(HSIZE);
+  const codetab = new Int32Array(HSIZE);
+  let hasInit = false;
+  return {
+    reset() {
+      stream.reset();
+      hasInit = false;
+    },
+    finish() {
+      stream.writeByte(constants_default.trailer);
+    },
+    bytes() {
+      return stream.bytes();
+    },
+    bytesView() {
+      return stream.bytesView();
+    },
+    get buffer() {
+      return stream.buffer;
+    },
+    get stream() {
+      return stream;
+    },
+    writeHeader,
+    writeFrame(index, width, height, opts = {}) {
+      const {
+        transparent = false,
+        transparentIndex = 0,
+        delay = 0,
+        palette = null,
+        repeat = 0,
+        colorDepth = 8,
+        dispose = -1
+      } = opts;
+      let first = false;
+      if (auto) {
+        if (!hasInit) {
+          first = true;
+          writeHeader();
+          hasInit = true;
+        }
+      } else {
+        first = Boolean(opts.first);
+      }
+      width = Math.max(0, Math.floor(width));
+      height = Math.max(0, Math.floor(height));
+      if (first) {
+        if (!palette) {
+          throw new Error("First frame must include a { palette } option");
+        }
+        encodeLogicalScreenDescriptor(stream, width, height, palette, colorDepth);
+        encodeColorTable(stream, palette);
+        if (repeat >= 0) {
+          encodeNetscapeExt(stream, repeat);
+        }
+      }
+      const delayTime = Math.round(delay / 10);
+      encodeGraphicControlExt(stream, dispose, delayTime, transparent, transparentIndex);
+      const useLocalColorTable = Boolean(palette) && !first;
+      encodeImageDescriptor(stream, width, height, useLocalColorTable ? palette : null);
+      if (useLocalColorTable)
+        encodeColorTable(stream, palette);
+      encodePixels(stream, index, width, height, colorDepth, accum, htab, codetab);
+    }
+  };
+  function writeHeader() {
+    writeUTFBytes(stream, "GIF89a");
+  }
+}
+function encodeGraphicControlExt(stream, dispose, delay, transparent, transparentIndex) {
+  stream.writeByte(33);
+  stream.writeByte(249);
+  stream.writeByte(4);
+  if (transparentIndex < 0) {
+    transparentIndex = 0;
+    transparent = false;
+  }
+  var transp, disp;
+  if (!transparent) {
+    transp = 0;
+    disp = 0;
+  } else {
+    transp = 1;
+    disp = 2;
+  }
+  if (dispose >= 0) {
+    disp = dispose & 7;
+  }
+  disp <<= 2;
+  const userInput = 0;
+  stream.writeByte(0 | disp | userInput | transp);
+  writeUInt16(stream, delay);
+  stream.writeByte(transparentIndex || 0);
+  stream.writeByte(0);
+}
+function encodeLogicalScreenDescriptor(stream, width, height, palette, colorDepth = 8) {
+  const globalColorTableFlag = 1;
+  const sortFlag = 0;
+  const globalColorTableSize = colorTableSize(palette.length) - 1;
+  const fields = globalColorTableFlag << 7 | colorDepth - 1 << 4 | sortFlag << 3 | globalColorTableSize;
+  const backgroundColorIndex = 0;
+  const pixelAspectRatio = 0;
+  writeUInt16(stream, width);
+  writeUInt16(stream, height);
+  stream.writeBytes([fields, backgroundColorIndex, pixelAspectRatio]);
+}
+function encodeNetscapeExt(stream, repeat) {
+  stream.writeByte(33);
+  stream.writeByte(255);
+  stream.writeByte(11);
+  writeUTFBytes(stream, "NETSCAPE2.0");
+  stream.writeByte(3);
+  stream.writeByte(1);
+  writeUInt16(stream, repeat);
+  stream.writeByte(0);
+}
+function encodeColorTable(stream, palette) {
+  const colorTableLength = 1 << colorTableSize(palette.length);
+  for (let i = 0; i < colorTableLength; i++) {
+    let color = [0, 0, 0];
+    if (i < palette.length) {
+      color = palette[i];
+    }
+    stream.writeByte(color[0]);
+    stream.writeByte(color[1]);
+    stream.writeByte(color[2]);
+  }
+}
+function encodeImageDescriptor(stream, width, height, localPalette) {
+  stream.writeByte(44);
+  writeUInt16(stream, 0);
+  writeUInt16(stream, 0);
+  writeUInt16(stream, width);
+  writeUInt16(stream, height);
+  if (localPalette) {
+    const interlace = 0;
+    const sorted = 0;
+    const palSize = colorTableSize(localPalette.length) - 1;
+    stream.writeByte(128 | interlace | sorted | 0 | palSize);
+  } else {
+    stream.writeByte(0);
+  }
+}
+function encodePixels(stream, index, width, height, colorDepth = 8, accum, htab, codetab) {
+  lzwEncode_default(width, height, index, colorDepth, stream, accum, htab, codetab);
+}
+function writeUInt16(stream, short) {
+  stream.writeByte(short & 255);
+  stream.writeByte(short >> 8 & 255);
+}
+function writeUTFBytes(stream, text) {
+  for (var i = 0; i < text.length; i++) {
+    stream.writeByte(text.charCodeAt(i));
+  }
+}
+function colorTableSize(length) {
+  return Math.max(Math.ceil(Math.log2(length)), 1);
+}
+var src_default = GIFEncoder;
+
+
+return exports;})();
+</script>
+<script>
+(() => {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const $ = id => document.getElementById(id);
+  const W = 1920, BASE_H = 1080;
+
+  const THEMES = {
+    night: { band:'#0E1512', fg:'#EEF5F1', accent:'#2BD47D', muted:'#8FA39A', media:'#000' },
+    day:   { band:'#F5F7F4', fg:'#111A15', accent:'#0F9D58', muted:'#5B6B63', media:'#000' },
+    gold:  { band:'#15110A', fg:'#F6EEDC', accent:'#E0B04A', muted:'#A8987A', media:'#000' }
+  };
+
+  const S = {
+    theme:'night', align:'left', band:28, size:64, fit:'cover', layout:'inside',
+    eyebrow:$('eyebrow').value, caption:$('caption').value, footer:''
+  };
+  // media: {kind:'sample'|'video'|'anim'|'image', video, frames:[{bmp,start,dur}], total, img, name}
+  let media = { kind:'sample' };
+  let clock0 = performance.now();
+  let busy = false;
+
+  // ---------- defaults & draft ----------
+  const today = new Date().toLocaleDateString('ms-MY', { day:'numeric', month:'short', year:'numeric' });
+  $('footer').value = today; S.footer = today;
+  try {
+    const d = JSON.parse(localStorage.getItem('pm-card') || 'null');
+    if (d) for (const k of ['eyebrow','caption','footer']) if (typeof d[k] === 'string') { S[k] = d[k]; $(k).value = d[k]; }
+  } catch (e) {}
+  const saveDraft = () => { try { localStorage.setItem('pm-card', JSON.stringify({ eyebrow:S.eyebrow, caption:S.caption, footer:S.footer })); } catch (e) {} };
+
+  // ---------- geometry ----------
+  function dims() {
+    if (S.layout === 'inside') {
+      const band = Math.round(BASE_H * S.band / 100);
+      return { w:W, h:BASE_H, mh:BASE_H - band, band };
+    }
+    const band = Math.round(BASE_H * S.band / 100 * 1.1);
+    return { w:W, h:BASE_H + band, mh:BASE_H, band };
+  }
+  function syncCanvas() {
+    const d = dims();
+    if (cv.width !== d.w || cv.height !== d.h) { cv.width = d.w; cv.height = d.h; }
+    const ratio = S.layout === 'inside' ? '16:9' : 'video 16:9 + teks';
+    $('metaSize').textContent = `${d.w} × ${d.h} · ${ratio}`;
+  }
+
+  // ---------- sample animation (shown before upload) ----------
+  const samplePts = (() => {
+    let s = 7, v = 0; const pts = [];
+    const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 90; i++) { v += (rnd() - 0.42) * 1.2; pts.push(v); }
+    return pts;
+  })();
+  function drawSample(c, w, h, t) {
+    const T = THEMES[S.theme];
+    const g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#0B1410'); g.addColorStop(1, '#06090A');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.strokeStyle = 'rgba(255,255,255,0.06)'; c.lineWidth = 2;
+    for (let x = 0; x <= w; x += w / 12) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+    for (let y = 0; y <= h; y += h / 6) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+    const p = Math.min(1, (t % 5000) / 4200);
+    const n = Math.max(2, Math.floor(samplePts.length * p));
+    const min = Math.min(...samplePts), max = Math.max(...samplePts);
+    const px = i => 120 + (w - 240) * i / (samplePts.length - 1);
+    const py = v => h - 110 - (h - 260) * (v - min) / (max - min);
+    c.beginPath(); c.moveTo(px(0), py(samplePts[0]));
+    for (let i = 1; i < n; i++) c.lineTo(px(i), py(samplePts[i]));
+    c.lineTo(px(n - 1), h); c.lineTo(px(0), h); c.closePath();
+    const fill = c.createLinearGradient(0, 120, 0, h);
+    fill.addColorStop(0, T.accent + '55'); fill.addColorStop(1, T.accent + '00');
+    c.fillStyle = fill; c.fill();
+    c.beginPath(); c.moveTo(px(0), py(samplePts[0]));
+    for (let i = 1; i < n; i++) c.lineTo(px(i), py(samplePts[i]));
+    c.strokeStyle = T.accent; c.lineWidth = 6; c.lineJoin = 'round'; c.stroke();
+    c.fillStyle = T.accent; c.beginPath(); c.arc(px(n - 1), py(samplePts[n - 1]), 12, 0, Math.PI * 2); c.fill();
+    c.font = '600 30px "JetBrains Mono", monospace'; c.fillStyle = 'rgba(255,255,255,0.55)'; c.textAlign = 'left';
+    c.fillText('CONTOH · letak GIF / video anda di sini', 60, 80);
+  }
+
+  // ---------- media drawing ----------
+  function drawFit(c, src, sw, sh, w, h) {
+    if (!sw || !sh) return;
+    const s = S.fit === 'cover' ? Math.max(w / sw, h / sh) : Math.min(w / sw, h / sh);
+    const dw = sw * s, dh = sh * s;
+    c.drawImage(src, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  }
+  function animFrameAt(t) {
+    const tt = t % media.total;
+    const fr = media.frames;
+    let lo = 0, hi = fr.length - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (fr[m].start <= tt) lo = m; else hi = m - 1; }
+    return fr[lo].bmp;
+  }
+  function drawMedia(c, w, h, t) {
+    c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
+    if (media.kind === 'sample') return drawSample(c, w, h, t);
+    if (media.kind === 'video') return drawFit(c, media.video, media.video.videoWidth, media.video.videoHeight, w, h);
+    if (media.kind === 'anim') { const b = animFrameAt(t); return drawFit(c, b, b.width, b.height, w, h); }
+    if (media.kind === 'image') return drawFit(c, media.img, media.img.naturalWidth, media.img.naturalHeight, w, h);
+  }
+
+  // ---------- text band ----------
+  function wrapLines(c, text, maxW) {
+    const out = [];
+    for (const para of text.split('\n')) {
+      const words = para.split(/\s+/).filter(Boolean);
+      if (!words.length) { out.push(''); continue; }
+      let line = '';
+      for (const wd of words) {
+        const test = line ? line + ' ' + wd : wd;
+        if (c.measureText(test).width <= maxW || !line) line = test;
+        else { out.push(line); line = wd; }
+      }
+      out.push(line);
+    }
+    return out;
+  }
+  function drawBand(c, d) {
+    const T = THEMES[S.theme];
+    const y0 = d.mh, bh = d.band, pad = 84;
+    c.fillStyle = T.band; c.fillRect(0, y0, d.w, bh);
+    c.fillStyle = T.accent; c.fillRect(0, y0, d.w, 8);
+    const center = S.align === 'center';
+    const x = center ? d.w / 2 : pad;
+    c.textAlign = center ? 'center' : 'left';
+    c.textBaseline = 'alphabetic';
+
+    const eyeSize = Math.max(22, Math.round(bh * 0.085));
+    const footSize = Math.max(20, Math.round(bh * 0.075));
+    let top = y0 + Math.round(bh * 0.14);
+    let bottom = y0 + bh - Math.round(bh * 0.12);
+
+    if (S.eyebrow.trim()) {
+      c.font = `700 ${eyeSize}px "Plus Jakarta Sans", sans-serif`;
+      c.fillStyle = T.accent;
+      if ('letterSpacing' in c) c.letterSpacing = '4px';
+      c.fillText(S.eyebrow.toUpperCase(), x, top + eyeSize * 0.8);
+      if ('letterSpacing' in c) c.letterSpacing = '0px';
+      top += eyeSize * 1.55;
+    }
+    if (S.footer.trim()) {
+      c.font = `500 ${footSize}px "JetBrains Mono", monospace`;
+      c.fillStyle = T.muted;
+      c.fillText(S.footer, x, bottom);
+      bottom -= footSize * 1.5;
+    }
+    const avail = Math.max(10, bottom - top);
+    let size = S.size, lines, lh;
+    for (;;) {
+      c.font = `800 ${size}px "Plus Jakarta Sans", sans-serif`;
+      lines = wrapLines(c, S.caption, d.w - pad * 2);
+      lh = size * 1.18;
+      if (lines.length * lh <= avail || size <= 22) break;
+      size -= 2;
+    }
+    c.fillStyle = T.fg;
+    const blockH = lines.length * lh;
+    let y = top + Math.max(0, (avail - blockH) / 2) + size * 0.92;
+    for (const ln of lines) { c.fillText(ln, x, y); y += lh; }
+  }
+
+  function render(c, t) {
+    const d = dims();
+    c.save();
+    c.beginPath(); c.rect(0, 0, d.w, d.mh); c.clip();
+    drawMedia(c, d.w, d.mh, t);
+    c.restore();
+    drawBand(c, d);
+  }
+
+  // ---------- live loop ----------
+  let liveOn = true;
+  function loop(now) {
+    if (liveOn) { syncCanvas(); render(ctx, now - clock0); }
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- loading media ----------
+  function setStatus(msg) { $('status').textContent = msg; }
+  function setProg(p) { $('prog').style.width = Math.round(p * 100) + '%'; }
+  function releaseMedia() {
+    if (media.kind === 'anim') media.frames.forEach(f => f.bmp.close && f.bmp.close());
+    if (media.kind === 'video') { media.video.pause(); URL.revokeObjectURL(media.video.src); }
+    if (media.kind === 'image') URL.revokeObjectURL(media.img.src);
+  }
+  async function loadFile(file) {
+    if (!file) return;
+    setStatus('Memuatkan ' + file.name + '…'); setProg(0);
+    try {
+      let next;
+      if (file.type.startsWith('video/')) {
+        const v = document.createElement('video');
+        v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
+        v.src = URL.createObjectURL(file);
+        await new Promise((ok, bad) => { v.onloadeddata = ok; v.onerror = () => bad(new Error('Video tidak dapat dibaca oleh browser ini.')); });
+        await v.play().catch(() => {});
+        next = { kind:'video', video:v, name:file.name, durationMs: (v.duration || 5) * 1000 };
+      } else if ((file.type === 'image/gif' || file.type === 'image/webp') && 'ImageDecoder' in window) {
+        const dec = new ImageDecoder({ data: await file.arrayBuffer(), type: file.type });
+        await dec.tracks.ready;
+        const count = Math.min(dec.tracks.selectedTrack.frameCount, 600);
+        const frames = []; let start = 0;
+        for (let i = 0; i < count; i++) {
+          const { image } = await dec.decode({ frameIndex:i });
+          const dur = Math.max(20, (image.duration || 100000) / 1000);
+          frames.push({ bmp: await createImageBitmap(image), start, dur });
+          image.close(); start += dur; setProg((i + 1) / count);
+        }
+        dec.close();
+        next = frames.length > 1
+          ? { kind:'anim', frames, total:start, name:file.name, durationMs:start }
+          : { kind:'image', img: await bitmapToImg(file), name:file.name };
+      } else if (file.type.startsWith('image/')) {
+        next = { kind:'image', img: await bitmapToImg(file), name:file.name };
+        if (file.type === 'image/gif') setStatus('Browser ini tak boleh pecahkan frame GIF; hanya frame pertama digunakan. Cuba Chrome/Edge, atau guna video MP4.');
+      } else throw new Error('Jenis fail tidak disokong. Guna GIF, MP4, WebM, PNG atau JPG.');
+      releaseMedia();
+      media = next; clock0 = performance.now();
+      const kindTxt = media.kind === 'video' ? 'video' : media.kind === 'anim' ? `GIF ${media.frames.length} frame` : 'gambar';
+      $('metaMedia').textContent = `${media.name} · ${kindTxt}`;
+      if (media.durationMs) $('dur').value = suggestDur(media.durationMs);
+      if (!(file.type === 'image/gif' && media.kind === 'image')) setStatus('Media dimuatkan.');
+      setProg(0);
+    } catch (e) { setStatus(e.message || 'Fail tidak dapat dibaca.'); setProg(0); }
+  }
+  function bitmapToImg(file) {
+    return new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(new Error('Gambar tidak dapat dibaca.')); i.src = URL.createObjectURL(file); });
+  }
+  function suggestDur(ms) {
+    let s = ms / 1000;
+    if (s < 3) s = Math.ceil(3 / s) * s;          // loop short GIFs to at least ~3 s
+    return Math.min(30, Math.round(s * 2) / 2 || 5);
+  }
+
+  // ---------- saving ----------
+  const dlP = (window.claude && window.claude.use) ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
+  function showResult(blob, kind) {
+    const box = $('result'); box.innerHTML = ''; box.hidden = false;
+    const url = URL.createObjectURL(blob);
+    const el = document.createElement(kind === 'video' ? 'video' : 'img');
+    if (kind === 'video') { el.controls = true; el.loop = true; el.muted = true; el.playsInline = true; }
+    el.src = url; box.appendChild(el);
+    const p = document.createElement('p'); p.className = 'hint';
+    p.textContent = 'Kalau fail tidak tersimpan, tekan lama / klik kanan pada pratonton ini untuk simpan.';
+    box.appendChild(p);
+  }
+  async function offer(blob, filename, kind) {
+    const mb = (blob.size / 1048576).toFixed(1);
+    const dl = await dlP;
+    if (dl) {
+      try { await dl.save({ filename, data: blob }); setStatus(`Disimpan: ${filename} (${mb} MB)`); return; }
+      catch (e) {
+        if (e && e.code === 'declined') { setStatus('Simpanan dibatalkan.'); return; }
+        if (e && e.code === 'rate_limited') { setStatus('Tunggu sebentar, kemudian tekan simpan sekali lagi.'); showResult(blob, kind); return; }
+      }
+    } else {
+      try { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {}
+    }
+    setStatus(`Siap: ${filename} (${mb} MB)`);
+    showResult(blob, kind);
+  }
+  function stamp() { const d = new Date(); return d.toISOString().slice(0, 10); }
+  function lockUI(on) { busy = on; ['btnVideo','btnGif','btnPng'].forEach(id => $(id).disabled = on); }
+  function durMs() { const v = parseFloat($('dur').value); return Math.min(30, Math.max(1, isFinite(v) ? v : 5)) * 1000; }
+
+  $('btnPng').onclick = () => {
+    if (busy) return;
+    syncCanvas(); render(ctx, performance.now() - clock0);
+    cv.toBlob(b => b && offer(b, `plusmaker-performance-${stamp()}.png`, 'image'), 'image/png');
+  };
+
+  $('btnVideo').onclick = async () => {
+    if (busy) return;
+    if (!cv.captureStream || !window.MediaRecorder) { setStatus('Browser ini tidak boleh rakam video. Cuba Chrome, Edge atau Safari terkini, atau guna “Simpan GIF”.'); return; }
+    const types = ['video/mp4;codecs=avc1.42E01E','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+    const mime = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    lockUI(true); setProg(0);
+    const D = durMs();
+    try {
+      if (media.kind === 'video') { media.video.currentTime = 0; await media.video.play().catch(() => {}); }
+      clock0 = performance.now();
+      syncCanvas(); render(ctx, 0);
+      const stream = cv.captureStream(30);
+      const rec = new MediaRecorder(stream, mime ? { mimeType:mime, videoBitsPerSecond: 8e6 } : undefined);
+      const chunks = [];
+      rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+      const done = new Promise(r => rec.onstop = r);
+      rec.start(250);
+      setStatus(`Merakam ${D / 1000} saat…`);
+      const t0 = performance.now();
+      await new Promise(r => { const tick = () => { const p = (performance.now() - t0) / D; setProg(Math.min(1, p)); p >= 1 ? r() : requestAnimationFrame(tick); }; tick(); });
+      rec.stop(); await done;
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(chunks, { type: mime || 'video/webm' });
+      await offer(blob, `plusmaker-performance-${stamp()}.${ext}`, 'video');
+    } catch (e) { setStatus('Rakaman gagal: ' + (e.message || e)); }
+    finally { lockUI(false); setProg(0); }
+  };
+
+  let gifLib = null;
+  $('btnGif').onclick = async () => {
+    if (busy) return;
+    lockUI(true); setProg(0); setStatus('Menyediakan GIF…');
+    const wasVideo = media.kind === 'video';
+    try {
+      gifLib = window.gifenc;
+      const { GIFEncoder, quantize, applyPalette } = gifLib;
+      const d = dims(); const k = 960 / d.w;
+      const gw = Math.round(d.w * k), gh = Math.round(d.h * k);
+      const oc = document.createElement('canvas'); oc.width = gw; oc.height = gh;
+      const oct = oc.getContext('2d', { willReadFrequently:true });
+      const fps = 12, D = durMs(), n = Math.max(1, Math.round(D / 1000 * fps)), delay = Math.round(1000 / fps);
+      const enc = GIFEncoder();
+      if (wasVideo) media.video.pause();
+      for (let i = 0; i < n; i++) {
+        const t = i * 1000 / fps;
+        if (wasVideo) await seek(media.video, (t / 1000) % (media.video.duration || 1));
+        oct.setTransform(k, 0, 0, k, 0, 0);
+        render(oct, t);
+        const data = oct.getImageData(0, 0, gw, gh).data;
+        const palette = quantize(data, 256);
+        enc.writeFrame(applyPalette(data, palette), gw, gh, { palette, delay });
+        setProg((i + 1) / n); setStatus(`Menyediakan GIF… frame ${i + 1}/${n}`);
+        if (i % 3 === 2) await new Promise(r => setTimeout(r, 0));
+      }
+      enc.finish();
+      await offer(new Blob([enc.bytes()], { type:'image/gif' }), `plusmaker-performance-${stamp()}.gif`, 'image');
+    } catch (e) { setStatus('GIF gagal: ' + (e.message || e)); }
+    finally {
+      if (wasVideo) media.video.play().catch(() => {});
+      lockUI(false); setProg(0);
+    }
+  };
+  function seek(v, t) {
+    return new Promise(r => {
+      const to = setTimeout(r, 1500);
+      v.addEventListener('seeked', () => { clearTimeout(to); r(); }, { once:true });
+      v.currentTime = t;
+    });
+  }
+
+  // ---------- controls ----------
+  const drop = $('drop'), file = $('file');
+  drop.onclick = () => file.click();
+  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); file.click(); } };
+  file.onchange = () => { loadFile(file.files[0]); file.value = ''; };
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => loadFile(e.dataTransfer.files[0]));
+  document.addEventListener('paste', e => { const f = [...(e.clipboardData?.files || [])][0]; if (f) loadFile(f); });
+
+  for (const id of ['eyebrow','caption','footer']) $(id).addEventListener('input', e => { S[id] = e.target.value; saveDraft(); });
+  $('fit').onchange = e => S.fit = e.target.value;
+  $('layout').onchange = e => S.layout = e.target.value;
+  $('band').oninput = e => { S.band = +e.target.value; $('bandVal').textContent = S.band + '%'; };
+  $('size').oninput = e => { S.size = +e.target.value; $('sizeVal').textContent = S.size + ' px'; };
+  function seg(groupId, attr, key) {
+    const btns = [...$(groupId).querySelectorAll('button')];
+    btns.forEach(b => b.onclick = () => { S[key] = b.dataset[attr]; btns.forEach(x => x.setAttribute('aria-pressed', x === b)); });
+  }
+  seg('themes', 't', 'theme'); seg('aligns', 'a', 'align');
+
+  const fontsReady = Promise.all([
+    document.fonts.load('800 64px "Plus Jakarta Sans"'), document.fonts.load('700 24px "Plus Jakarta Sans"'),
+    document.fonts.load('500 24px "JetBrains Mono"')
+  ]).catch(() => {});
+  Promise.race([fontsReady, new Promise(r => setTimeout(r, 1500))]).then(() => requestAnimationFrame(loop));
+  syncCanvas(); render(ctx, 0);
+})();
+</script>
