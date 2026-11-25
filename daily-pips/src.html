@@ -52,7 +52,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
 .hint{font-size:.8rem;color:var(--muted);margin:0}
 .count{flex:0 0 auto;font-family:var(--font-mono);font-size:.8rem;color:var(--muted)}
 .count.over{color:var(--bad)}
-#caption{min-height:190px}
+#caption{min-height:320px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{font:inherit;font-size:.78rem;font-weight:800;letter-spacing:.03em;padding:6px 10px;border-radius:999px;border:1px solid var(--gold-deep);background:transparent;color:var(--gold);cursor:pointer}
 .chip:hover{background:rgba(245,192,50,.12)}
@@ -72,7 +72,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
       </div>
       <section class="sec">
         <h2>Caption Telegram</h2>
-        <label>Dijana daripada senarai anda. Boleh ubah sebelum salin.
+        <label for="capTitle">Tajuk
+          <input type="text" id="capTitle" maxlength="120" value="🔥 PLUSMAKER INDICATORS DAILY PERFORMANCE">
+        </label>
+        <label for="capIntro">Ayat pembuka
+          <textarea id="capIntro" rows="3">Fighter, ini antara hasil setup daripada PLUSMAKER sepanjang sesi trading hari ini. Alhamdulillah, TZB &amp; TPM berjaya capai target masing-masing! 📊🔥</textarea>
+        </label>
+        <label for="capOutro">Ayat penutup
+          <input type="text" id="capOutro" maxlength="200" value="🔥 3 INDICATORS, 1 GOAL — BANTU TRADER BACA MARKET DENGAN LEBIH TERATUR.">
+        </label>
+        <label for="caption">Caption siap (dijana; boleh ubah sebelum salin)
           <textarea id="caption"></textarea>
         </label>
         <div class="row">
@@ -86,19 +95,32 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px soli
     <div class="rack">
       <section class="sec">
         <h2>1 · Keputusan hari ini</h2>
-        <label for="date">Tarikh
-          <input type="date" id="date">
-        </label>
-        <label for="entries">Satu baris satu trade <small>Format: NAMA pips. Contoh: TZB UP +120. Tanpa nombor pun boleh (kad tunjuk nama sahaja).</small>
-          <textarea id="entries" rows="6">TZB UP +120
-TZB DOWN +85
-TPM BUY +60
-TPM SWAP SELL +95</textarea>
+        <div class="row">
+          <label for="date">Tarikh
+            <input type="date" id="date">
+          </label>
+          <label for="pair">Pair
+            <input type="text" id="pair" maxlength="12" value="XAUUSD">
+          </label>
+        </div>
+        <label for="entries">Satu baris satu trade <small>Format: NAMA pips TP. Contoh: TZB DOWN +435.0 TP2. TP boleh tinggal kosong.</small>
+          <textarea id="entries" rows="10">TZB DOWN +435.0 TP2
+TPM SELL +283.2 TP2
+TZB POSSIBLE UP +102.4 TP1
+TPM SELL +135.0 TP2
+TZB UP +89.4 TP1
+TPM SWAP SELL +92.4 TP2
+TZB POSSIBLE DOWN +178.8 TP2
+TZB POSSIBLE DOWN +566.4 TP2
+TPM SELL +187.4 TP2</textarea>
         </label>
         <div class="chips" role="group" aria-label="Tambah baris cepat">
           <button type="button" class="chip" data-v="TZB UP">+ TZB UP</button>
           <button type="button" class="chip" data-v="TZB DOWN">+ TZB DOWN</button>
           <button type="button" class="chip" data-v="TPM BUY">+ TPM BUY</button>
+          <button type="button" class="chip" data-v="TPM SELL">+ TPM SELL</button>
+          <button type="button" class="chip" data-v="TZB POSSIBLE UP">+ TZB POSSIBLE UP</button>
+          <button type="button" class="chip" data-v="TZB POSSIBLE DOWN">+ TZB POSSIBLE DOWN</button>
           <button type="button" class="chip" data-v="TPM SWAP SELL">+ TPM SWAP SELL</button>
         </div>
         <div class="parsed" id="parsed" aria-live="polite"></div>
@@ -153,28 +175,31 @@ TPM SWAP SELL +95</textarea>
   $('date').value = todayISO;
 
   try {
-    const d = JSON.parse(localStorage.getItem('pm-pips2') || 'null');
-    if (d) for (const k of ['entries','hdr','suffix','totalHdr']) if (typeof d[k] === 'string') $(k).value = d[k];
+    const d = JSON.parse(localStorage.getItem('pm-pips3') || 'null');
+    if (d) for (const k of ['entries','hdr','suffix','totalHdr','pair','capTitle','capIntro','capOutro']) if (typeof d[k] === 'string') $(k).value = d[k];
     if (d && typeof d.showTotal === 'boolean') $('showTotal').checked = d.showTotal;
   } catch (e) {}
-  const saveDraft = () => { try { localStorage.setItem('pm-pips2', JSON.stringify({ entries:$('entries').value, hdr:$('hdr').value, suffix:$('suffix').value, totalHdr:$('totalHdr').value, showTotal:$('showTotal').checked })); } catch (e) {} };
+  const saveDraft = () => { try { localStorage.setItem('pm-pips3', JSON.stringify({ pair:$('pair').value, capTitle:$('capTitle').value, capIntro:$('capIntro').value, capOutro:$('capOutro').value, entries:$('entries').value, hdr:$('hdr').value, suffix:$('suffix').value, totalHdr:$('totalHdr').value, showTotal:$('showTotal').checked })); } catch (e) {} };
 
   function parse() {
     const items = [], bad = [];
     for (const raw of $('entries').value.split('\n')) {
       const line = raw.trim(); if (!line) continue;
-      const m = line.match(/^(.*?)[\s|:,=]*([+\-−]?\s*\d+(?:[.,]\d+)?)\s*(pips?)?\s*$/i);
+      const m = line.replace(/^[✅❌\s]+/, '').match(/^(.*?)[\s|:,=—–-]*([+\-−]?\s*\d[\d,]*(?:\.\d+)?)\s*(?:pips?)?\s*\(?\s*(TP\s*\d+|SL|BE)?\s*\)?\s*$/i);
       if (m && m[1].trim()) {
-        const n = parseFloat(m[2].replace(/\s/g, '').replace('−', '-').replace(',', '.'));
-        items.push({ pair: m[1].trim().toUpperCase().slice(0, 24), pips: n });
-      } else if (/\D/.test(line) && !/\d/.test(line)) items.push({ pair: line.replace(/[\s+\-−|:]+$/, '').toUpperCase().slice(0, 24), pips: null });
+        let num = m[2].replace(/\s/g, '').replace('−', '-');
+        num = /,\d{3}(\D|$)/.test(num) ? num.replace(/,/g, '') : num.replace(',', '.');
+        items.push({ pair: m[1].trim().replace(/[\s—–-]+$/, '').toUpperCase().slice(0, 24), pips: parseFloat(num), tp: m[3] ? m[3].replace(/\s/g, '').toUpperCase() : '' });
+      } else if (/\D/.test(line) && !/\d/.test(line)) items.push({ pair: line.replace(/[\s+\-−|:]+$/, '').toUpperCase().slice(0, 24), pips: null, tp: '' });
       else bad.push(line);
     }
-    return { items: items.slice(0, 8), bad, cut: items.length > 8 };
+    return { items: items.slice(0, 12), bad, cut: items.length > 12 };
   }
   const sumP = items => items.reduce((a, b) => a + (b.pips ?? 0), 0);
   const hasNum = items => items.some(b => b.pips !== null);
-  const fmtPips = n => (n > 0 ? '+' : n < 0 ? '−' : '') + (Math.round(Math.abs(n) * 10) / 10).toLocaleString('en-US');
+  const fmtNum = n => Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const fmtPips = n => (n > 0 ? '+' : n < 0 ? '−' : '') + fmtNum(n);
+  const fmtTotal = n => (n < 0 ? '−' : '') + fmtNum(n);
 
   function sync() {
     const p = parse();
@@ -187,8 +212,8 @@ TPM SWAP SELL +95</textarea>
     const ok = document.createElement('div');
     ok.textContent = S.items.length ? `${S.items.length} kad · jumlah ${fmtPips(total)} pips` : 'Belum ada baris yang sah.';
     box.appendChild(ok);
-    for (const b of p.bad) { const e = document.createElement('div'); e.className = 'bad'; e.textContent = `Tak faham: “${b}” (cuba: TZB UP +120)`; box.appendChild(e); }
-    if (p.cut) { const e = document.createElement('div'); e.className = 'bad'; e.textContent = 'Maksimum 8 kad dalam video; yang selebihnya diabaikan.'; box.appendChild(e); }
+    for (const b of p.bad) { const e = document.createElement('div'); e.className = 'bad'; e.textContent = `Tak faham: “${b}” (cuba: TZB DOWN +435.0 TP2)`; box.appendChild(e); }
+    if (p.cut) { const e = document.createElement('div'); e.className = 'bad'; e.textContent = 'Maksimum 12 baris dalam video; yang selebihnya diabaikan.'; box.appendChild(e); }
     $('metaDur').textContent = `${(timeline().D / 1000).toFixed(1)} saat`;
     saveDraft();
   }
@@ -197,10 +222,14 @@ TPM SWAP SELL +95</textarea>
   let capEdited = false;
   function makeCaption() {
     const total = sumP(S.items);
-    const lines = [`📊 Daily Performance PlusMaker`, `🗓 ${S.dateTxt}`, ''];
-    for (const it of S.items) lines.push(it.pips === null ? `🔔 ${it.pair}` : `${it.pips >= 0 ? '✅' : '❌'} ${it.pair} ${fmtPips(it.pips)} pips`);
-    if (hasNum(S.items)) lines.push('', `💰 Total: ${fmtPips(total)} pips`);
-    lines.push('', '⚠️ Trading melibatkan risiko. Bukan nasihat kewangan.');
+    const title = $('capTitle').value.trim(), pair = $('pair').value.trim().toUpperCase();
+    const lines = [];
+    if (title) lines.push(pair ? `${title} | ${pair}` : title, '');
+    if ($('capIntro').value.trim()) lines.push($('capIntro').value.trim(), '');
+    for (const it of S.items) lines.push(it.pips === null ? `✅ ${it.pair}${it.tp ? ` (${it.tp})` : ''}`
+      : `${it.pips >= 0 ? '✅' : '❌'} ${it.pair} — ${fmtPips(it.pips)} PIPS${it.tp ? ` (${it.tp})` : ''}`);
+    if (hasNum(S.items)) lines.push('', `🏆 TOTAL DAILY: ${fmtTotal(total)} PIPS`);
+    if ($('capOutro').value.trim()) lines.push('', $('capOutro').value.trim());
     return lines.join('\n');
   }
   function syncCaption(force) {
@@ -213,14 +242,15 @@ TPM SWAP SELL +95</textarea>
   // ---------- timeline ----------
   const INTRO = 500, STEP = 650, ANIM = 480, HOLD = 2200;
   function cards() {
-    const list = S.items.map(it => ({ kind:'trade', hdr:S.hdr, pair:it.pair, value: it.pips === null ? '' : `${fmtPips(it.pips)} ${S.suffix}`.trim(), neg: it.pips !== null && it.pips < 0 }));
+    const list = S.items.map(it => ({ kind:'trade', hdr:S.hdr, tp:it.tp, pair:it.pair, value: it.pips === null ? '' : `${fmtPips(it.pips)} ${S.suffix}`.trim(), neg: it.pips !== null && it.pips < 0 }));
     if (S.showTotal && hasNum(S.items)) {
       const total = sumP(S.items);
-      list.push({ kind:'total', hdr:[S.totalHdr, S.dateTxt].filter(Boolean).join(' · '), pair:'TOTAL', value:`${fmtPips(total)} ${S.suffix}`.trim(), neg: total < 0 });
+      list.push({ kind:'total', hdr:[S.totalHdr, $('pair').value.trim().toUpperCase(), S.dateTxt].filter(Boolean).join(' · '), pair:'TOTAL', value:`${fmtTotal(total)} ${S.suffix}`.trim(), neg: total < 0 });
     }
     return list;
   }
-  function timeline() { const n = cards().length; return { n, D: INTRO + Math.max(0, n - 1) * STEP + ANIM + HOLD }; }
+  const stepFor = n => n > 6 ? 420 : STEP;
+  function timeline() { const n = cards().length; return { n, D: INTRO + Math.max(0, n - 1) * stepFor(n) + ANIM + HOLD }; }
 
   // ---------- drawing ----------
   const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
@@ -257,9 +287,18 @@ TPM SWAP SELL +95</textarea>
     c.font = `800 ${hs}px Inter, sans-serif`;
     c.fillStyle = total ? '#2A1C02' : '#FFFFFF';
     c.fillText(card.hdr, tx, y + h * 0.39);
-    c.textAlign = 'right'; c.font = `500 ${Math.round(h * 0.13)}px Inter, sans-serif`;
-    c.fillStyle = total ? 'rgba(42,28,2,0.7)' : '#9A9A9A';
-    c.fillText('now', right, y + h * 0.37);
+    c.textAlign = 'right';
+    if (card.tp) {
+      c.font = `900 ${Math.round(h * 0.15)}px Inter, sans-serif`;
+      const tw = c.measureText(card.tp).width, ph = h * 0.24, pw = tw + h * 0.2;
+      rrect(c, right - pw, y + h * 0.17, pw, ph, ph / 2);
+      c.fillStyle = '#F5C032'; c.fill();
+      c.fillStyle = '#140D00'; c.fillText(card.tp, right - h * 0.1, y + h * 0.17 + ph * 0.74);
+    } else {
+      c.font = `500 ${Math.round(h * 0.13)}px Inter, sans-serif`;
+      c.fillStyle = total ? 'rgba(42,28,2,0.7)' : '#9A9A9A';
+      c.fillText('now', right, y + h * 0.37);
+    }
 
     c.textAlign = 'left';
     const maxW = right - tx;
@@ -289,24 +328,42 @@ TPM SWAP SELL +95</textarea>
       const pw = W * z, ph = pw * plate.naturalHeight / plate.naturalWidth;
       c.drawImage(plate, (W - pw) / 2, (H - ph) / 2, pw, ph);
     }
-    const prog = list.map((_, i) => clamp((t - INTRO - i * STEP) / ANIM));
+    const step = stepFor(n);
+    const prog = list.map((_, i) => clamp((t - INTRO - i * step) / ANIM));
     const eff = prog.reduce((a, p) => a + easeOut(p), 0);
     c.fillStyle = `rgba(0,0,0,${0.12 + 0.42 * clamp(eff / 2)})`; c.fillRect(0, 0, W, H);
     if (!n) {
       c.textAlign = 'center'; c.font = '700 44px Inter, sans-serif'; c.fillStyle = 'rgba(255,255,255,0.75)';
       c.fillText('Taip trade anda di sebelah kanan', W / 2, H - 90); return;
     }
-    const baseH = 200, gap = 34, w0 = 1240;
-    const fullH = n * baseH + (n - 1) * gap;
-    const k = Math.min(1, 940 / fullH);
-    const ch = baseH * k, g = gap * k, cw = w0 * Math.max(0.82, k);
-    const stackH = Math.max(ch, eff * (ch + g) - g);
+    // one column for up to 6 cards; two columns beyond that (TOTAL spans the full width)
+    const two = n > 6, hasTot = list[n - 1].kind === 'total';
+    const slots = list.map((cd, i) => {
+      if (!two) return { row: i, col: 0, span: 1 };
+      if (hasTot && i === n - 1) return { row: Math.ceil((n - 1) / 2), col: 0, span: 2 };
+      const nt = hasTot ? n - 1 : n;
+      return { row: Math.floor(i / 2), col: i % 2, span: 1, center: nt % 2 === 1 && i === nt - 1 };
+    });
+    const rows = slots[n - 1].row + 1;
+    const baseH = 200, gap = 34, gapX = 34;
+    const fullW = two ? 1760 : 1240;
+    const fullH = rows * baseH + (rows - 1) * gap;
+    const k = Math.min(1, 960 / fullH);
+    const ch = baseH * k, g = gap * k;
+    const colW = two ? (fullW - gapX) / 2 : fullW * Math.max(0.82, k);
+    const rowP = new Array(rows).fill(0);
+    slots.forEach((s, i) => { if (s.col === 0) rowP[s.row] = easeOut(prog[i]); });
+    const effRows = rowP.reduce((a, b) => a + b, 0);
+    const stackH = Math.max(ch, effRows * (ch + g) - g);
     const top = (H - stackH) / 2;
+    const left0 = (W - (two ? fullW : colW)) / 2;
     for (let i = 0; i < n; i++) {
       const p = prog[i]; if (p <= 0) continue;
-      const y = top + i * (ch + g) + (1 - easeOutBack(p)) * 140 * k;
+      const s = slots[i];
+      const cw = s.span === 2 ? fullW : colW;
+      const y = top + s.row * (ch + g) + (1 - easeOutBack(p)) * 140 * k;
       const sc = 0.92 + 0.08 * easeOutBack(p);
-      const x = (W - cw * sc) / 2;
+      const x = (s.center ? left0 + (fullW - colW) / 2 : left0 + s.col * (colW + gapX)) + cw * (1 - sc) / 2;
       drawCard(c, list[i], x, y + ch * (1 - sc) / 2, cw * sc, ch * sc, clamp(p * 1.6));
     }
   }
@@ -399,7 +456,7 @@ TPM SWAP SELL +95</textarea>
   };
 
   // ---------- controls ----------
-  for (const id of ['entries','hdr','suffix','totalHdr','date','showTotal']) $(id).addEventListener('input', () => { sync(); syncCaption(); clock0 = performance.now(); });
+  for (const id of ['entries','hdr','suffix','totalHdr','date','showTotal','pair','capTitle','capIntro','capOutro']) $(id).addEventListener('input', () => { sync(); syncCaption(); clock0 = performance.now(); });
   $('caption').addEventListener('input', () => { capEdited = true; syncCaption(); });
   $('btnRegen').onclick = () => syncCaption(true);
   document.querySelectorAll('.chip').forEach(b => b.onclick = () => {
